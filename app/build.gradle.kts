@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.ens492frontend"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.ens492frontend"
@@ -59,6 +59,9 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -66,8 +69,29 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("io.ktor:ktor-client-core:2.3.8")
-    implementation("io.ktor:ktor-client-cio:2.3.8")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.8")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.8")
+    // Ktor Client dependencies
+    implementation("io.ktor:ktor-client-core:2.3.5")
+    implementation ("io.ktor:ktor-client-android:2.3.5")
+    implementation ("io.ktor:ktor-client-logging:2.3.5")
+    implementation ("io.ktor:ktor-client-content-negotiation:2.3.5")
+    implementation ("io.ktor:ktor-serialization-kotlinx-json:2.3.5")
+    implementation ("io.ktor:ktor-client-websockets:2.3.5")
+
+    // Kotlinx Serialization for JSON parsing
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // Coroutines
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // ViewModel and LiveData
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    // For better flow collection in UI
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+    // SLF4J binding for Android logging
+    implementation ("org.slf4j:slf4j-android:1.7.36")
 }

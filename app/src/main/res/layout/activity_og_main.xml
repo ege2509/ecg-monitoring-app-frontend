@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Main Content Area with Blue Background -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/blueSection"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#A8C7F0"
+        app:layout_constraintBottom_toTopOf="@+id/whiteSection"
+        app:layout_constraintHeight_percent="0.45"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Welcome Text -->
+
+        <!-- Heart Rate Icon -->
+
+        <!-- ECG Monitor Icon -->
+
+        <!-- WiFi Icon -->
+
+        <!-- Doctor Icon -->
+
+        <TextView
+            android:id="@+id/welcomeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Welcome"
+            android:textColor="#000000"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.497"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/heartRateIcon"
+            android:layout_width="142dp"
+            android:layout_height="119dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="Heart rate monitoring"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/welcomeText"
+            app:srcCompat="@drawable/heart_rate_icon" />
+
+        <ImageView
+            android:id="@+id/ecgIcon"
+            android:layout_width="112dp"
+            android:layout_height="183dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="39dp"
+            android:layout_marginBottom="4dp"
+            android:contentDescription="ECG monitoring"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/doctorIcon"
+            app:layout_constraintStart_toStartOf="parent"
+            app:srcCompat="@drawable/ecg_icon" />
+
+        <ImageView
+            android:id="@+id/wifiIcon"
+            android:layout_width="112dp"
+            android:layout_height="184dp"
+            android:layout_marginStart="39dp"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="4dp"
+            android:contentDescription="Wireless connectivity"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/doctorIcon"
+            app:srcCompat="@drawable/wifi_icon" />
+
+        <ImageView
+            android:id="@+id/doctorIcon"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:contentDescription="Medical professional"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/heartRateIcon"
+            app:srcCompat="@drawable/doctor_icon" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- White Section -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/whiteSection"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHeight_percent="0.55"
+        app:layout_constraintTop_toBottomOf="@+id/blueSection">
+
+        <!-- Get Started Button -->
+
+        <!-- Instructions Text -->
+
+        <!-- Instant Monitoring Button -->
+
+        <!-- Instant Monitoring Description -->
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/getStartedButton"
+            android:layout_width="292dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="60dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="60dp"
+            android:background="@drawable/rounded_button_blue"
+            android:padding="12dp"
+            android:textColor="#000000"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/instructionsText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="40dp"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center"
+            android:text="Tap here to set up your profile, enter your medical history and store your monitoring data"
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/getStartedButton" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/instantMonitoringButton"
+            android:layout_width="292dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="80dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="80dp"
+            android:background="@drawable/rounded_button_orange"
+            android:padding="12dp"
+            android:textColor="#FFFFFF"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.512"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/instructionsText" />
+
+        <TextView
+            android:id="@+id/monitoringDescription"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="40dp"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center"
+            android:text="Begin real-time monitoring immediately with a single tap"
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/instantMonitoringButton" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
