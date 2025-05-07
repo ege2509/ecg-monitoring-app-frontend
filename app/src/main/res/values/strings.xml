@@ -1,3 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ENS492 Frontend</string>
+    <string name="app_name">ECG Monitor</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connection_established">Connection established</string>
+    <string name="connection_failed">Connection failed</string>
 </resources>

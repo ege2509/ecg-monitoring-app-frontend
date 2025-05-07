@@ -19,7 +19,9 @@ android {
             useSupportLibrary = true
         }
     }
-
+    buildFeatures {
+        viewBinding = true
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -76,6 +78,9 @@ dependencies {
     implementation ("io.ktor:ktor-client-content-negotiation:2.3.5")
     implementation ("io.ktor:ktor-serialization-kotlinx-json:2.3.5")
     implementation ("io.ktor:ktor-client-websockets:2.3.5")
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0") // or latest version
+
 
     // Kotlinx Serialization for JSON parsing
     implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
