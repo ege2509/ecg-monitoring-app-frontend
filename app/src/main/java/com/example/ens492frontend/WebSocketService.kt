@@ -1,7 +1,7 @@
-package com.example.ens492frontend
-
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -13,13 +13,10 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.util.concurrent.TimeUnit
 
-/**
- * Service for handling WebSocket connections to the ECG data server
- */
 class WebSocketService {
     companion object {
         private const val TAG = "WebSocketService"
-        private const val ECG_WEBSOCKET_URL = "ws://your-ecg-server-url/ws" // Replace with your actual WebSocket URL
+        private const val ECG_WEBSOCKET_URL = "ws://your-ecg-server-url/ws" // Update this with your actual server URL
         private const val RECONNECT_DELAY = 5000L // 5 seconds delay for reconnect attempts
     }
 
@@ -92,41 +89,75 @@ class WebSocketService {
      * Handle reconnection attempts
      */
     private fun handleReconnect() {
-        // Just for demonstration - in a real app, use a more robust reconnection strategy
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(RECONNECT_DELAY)
             if (webSocket == null) {
-                // Only try to reconnect if we're not already connected
-                kotlinx.coroutines.GlobalScope.launch {
-                    connect()
-                }
+                Log.d(TAG, "Attempting to reconnect...")
+                connect()
             }
-        }, RECONNECT_DELAY)
+        }
     }
 
     /**
-     * For testing or previewing, you can send simulated data
+     * For testing: send simulated ECG data
      */
     fun sendSimulatedData() {
-        val sampleData = """
-            {
-                "heartRate": 75,
-                "leads": [
-                    {
-                        "lead": 1,
-                        "data": [0.0, 0.1, 0.2, 0.0, -0.1, 0.0, 0.5, 1.5, 1.0, -0.5, -1.0, -0.3, 0.0]
-                    },
-                    {
-                        "lead": 2,
-                        "data": [0.0, 0.1, 0.3, 0.1, -0.2, -0.1, 0.6, 1.7, 0.9, -0.6, -0.9, -0.2, 0.0]
-                    }
-                ],
-                "abnormalities": {
-                    "RBBB": 0.85,
-                    "AF": 0.3
-                }
-            }
-        """.trimIndent()
+        // Create simulated multi-lead ECG data in the same format as the backend
+        val simulatedJson = buildSimulatedEcgJson()
+        _ecgDataFlow.tryEmit(simulatedJson)
+    }
 
-        _ecgDataFlow.tryEmit(sampleData)
+    /**
+     * Build simulated ECG JSON data matching the format from the backend
+     */
+    private fun buildSimulatedEcgJson(): String {
+        // Basic ECG waveform pattern
+        val pattern = listOf(0.0f, 0.0f, 0.1f, 0.2f, 0.0f, -0.1f, -0.1f, 0.0f, 0.5f, 1.5f, 1.0f,
+            -0.5f, -1.0f, -0.3f, 0.0f, 0.2f, 0.4f, 0.3f, 0.0f, -0.1f, 0.0f)
+
+        // Create data points for each lead (slightly different for each lead)
+        val leadsData = StringBuilder()
+        for (leadIndex in 0 until 12) { // 12 leads
+            if (leadIndex > 0) leadsData.append(",")
+            leadsData.append("{")
+            leadsData.append("\"lead\": ${leadIndex + 1},")
+            leadsData.append("\"data\": [")
+
+            // Add 20 data points with slight variation per lead
+            val dataPoints = StringBuilder()
+            for (i in 0 until 20) {
+                if (i > 0) dataPoints.append(",")
+                val baseValue = pattern[i % pattern.size]
+                val variation = (leadIndex * 0.1f) * baseValue
+                dataPoints.append(baseValue + variation)
+            }
+            leadsData.append(dataPoints)
+            leadsData.append("]")
+            leadsData.append("}")
+        }
+
+        // Random heart rate between 60-100
+        val heartRate = (60 + (Math.random() * 40)).toInt()
+
+        // Random abnormality detection (occasionally)
+        val hasAbnormality = Math.random() > 0.7
+        val abnormalityValue = if (hasAbnormality) 0.75f + (Math.random() * 0.2).toFloat() else 0.1f
+
+        // Build the complete JSON
+        return """
+        {
+            "timestamp": ${System.currentTimeMillis()},
+            "heartRate": $heartRate,
+            "leads": [$leadsData],
+            "abnormalities": {
+                "RBBB": ${if (hasAbnormality) abnormalityValue else 0.1f},
+                "AF": ${if (!hasAbnormality && Math.random() > 0.8) 0.8f else 0.05f},
+                "1dAVb": 0.05,
+                "LBBB": 0.02,
+                "SB": ${if (heartRate < 65) 0.9f else 0.0f},
+                "ST": ${if (heartRate > 95) 0.9f else 0.0f}
+            }
+        }
+        """.trimIndent()
     }
 }

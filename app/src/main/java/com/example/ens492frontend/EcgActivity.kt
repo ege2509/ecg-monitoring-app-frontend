@@ -1,15 +1,20 @@
 package com.example.ens492frontend
 
+import WebSocketService
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class EcgActivity : AppCompatActivity() {
@@ -18,9 +23,10 @@ class EcgActivity : AppCompatActivity() {
     private lateinit var leadSelector: Spinner
     private lateinit var connectButton: Button
     private lateinit var statusText: TextView
+    private lateinit var gridDensityGroup: RadioGroup
 
     private lateinit var webSocketService: WebSocketService
-    private var webSocketJob: Job? = null
+    private var simulationJob: Job? = null
     private var isConnected = false
 
     // Available ECG leads
@@ -36,18 +42,28 @@ class EcgActivity : AppCompatActivity() {
         connectButton = findViewById(R.id.connectButton)
         statusText = findViewById(R.id.statusText)
 
+        // If you have grid density controls in your layout, uncomment this
+        // gridDensityGroup = findViewById(R.id.gridDensityGroup)
+        // setupGridDensityControls()
+
         // Setup WebSocket service
         webSocketService = WebSocketService()
 
-        // Setup lead selector
+        // Setup UI components
         setupLeadSelector()
-
-        // Setup connect button
         setupConnectButton()
 
-        // Use simulated data for testing (remove in production)
-        if (isInEditMode) {
-            ecgVisualization.simulateEcgData()
+        // Set default grid density
+        ecgVisualization.setGridDensity(EcgVisualizationView.GridDensity.HIGH)
+
+        // Use ViewTreeObserver to ensure the view is ready before simulating
+        ecgVisualization.viewTreeObserver.addOnGlobalLayoutListener {
+            if (ecgVisualization.width > 0 && ecgVisualization.height > 0) {
+                Log.d("ECG", "View layout complete, running initial simulation")
+                runOnUiThread {
+                    ecgVisualization.simulateEcgData()
+                }
+            }
         }
     }
 
@@ -58,7 +74,7 @@ class EcgActivity : AppCompatActivity() {
         leadSelector.adapter = leadAdapter
 
         // Set default selection (Lead II = index 1)
-        leadSelector.setSelection(EcgVisualizationView.DEFAULT_LEAD_TO_DISPLAY)
+        leadSelector.setSelection(1) // Lead II is typically the default for rhythm analysis
 
         // Set lead change listener
         leadSelector.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -89,28 +105,51 @@ class EcgActivity : AppCompatActivity() {
         }
     }
 
+
     private fun connectToEcgService() {
         // Connect the WebSocket service
-        webSocketJob = lifecycleScope.launch {
-            webSocketService.connect()
+        lifecycleScope.launch {
+            try {
+                Log.d("ECG", "Connecting to WebSocket service")
 
-            // For testing: send simulated data periodically
-            if (isInEditMode) {
-                while (true) {
-                    webSocketService.sendSimulatedData()
-                    kotlinx.coroutines.delay(1000) // Send new data every second
+                // If using real server connection
+                if (!isInEditMode) {
+                    webSocketService.connect()
+                    Log.d("ECG", "Connected to real WebSocket server")
+                }
+                // For simulation mode
+                else {
+                    simulationJob = lifecycleScope.launch {
+                        Log.d("ECG", "Starting simulation job")
+                        while (isActive && isConnected) {
+                            Log.d("ECG", "Sending simulated data")
+                            webSocketService.sendSimulatedData()
+                            delay(200) // Send new data every 200ms for smoother animation
+                        }
+                    }
+                }
+
+                // Connect the visualization to start receiving data
+                ecgVisualization.connectToEcgService(lifecycleScope, webSocketService)
+
+            } catch (e: Exception) {
+                Log.e("ECG", "Error connecting to ECG service", e)
+                runOnUiThread {
+                    statusText.text = "Connection Failed"
+                    statusText.setTextColor(getColor(android.R.color.holo_red_dark))
+                    isConnected = false
+                    connectButton.text = "Connect"
                 }
             }
         }
-
-        // Connect the visualization to the WebSocket data flow
-        ecgVisualization.connectToEcgService(lifecycleScope, webSocketService)
     }
 
     private fun disconnectFromEcgService() {
-        // Disconnect the WebSocket service
-        webSocketJob?.cancel()
-        webSocketJob = null
+        // Cancel simulation if running
+        simulationJob?.cancel()
+        simulationJob = null
+
+        // Disconnect the WebSocket
         webSocketService.disconnect()
 
         // Disconnect the visualization
@@ -120,7 +159,9 @@ class EcgActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         // Make sure to disconnect on activity destroy
-        disconnectFromEcgService()
+        if (isConnected) {
+            disconnectFromEcgService()
+        }
     }
 
     /**

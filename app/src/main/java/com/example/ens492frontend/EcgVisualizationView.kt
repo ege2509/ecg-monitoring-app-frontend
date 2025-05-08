@@ -1,12 +1,14 @@
 package com.example.ens492frontend
 
 
+import WebSocketService
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.example.ens492frontend.R
@@ -15,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import kotlin.math.min
 
@@ -27,16 +30,27 @@ class EcgVisualizationView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
+    private val ecgDataPoints = mutableListOf<Float>()
+    private val maxDataPoints = 500 // Number of points to show in the view
+    private var currentLeadIndex = 1
+
     // Constants
+// Constants
     companion object {
-        const val DEFAULT_LEAD_TO_DISPLAY = 1 // Default to Lead II (index 1)
-        const val MAX_DATA_POINTS = 1000 // Maximum number of data points to display
-        const val GRID_SIZE_MM = 5 // Standard ECG grid size in mm
-        const val MM_TO_PIXEL_RATIO = 2.5f // Convert mm to pixels (approximate for common screens)
+        const val DEFAULT_LEAD_TO_DISPLAY = 1
+        const val MAX_DATA_POINTS = 1000
+        const val GRID_SIZE_MM = 5
+
+        // Increase this ratio significantly for mobile displays
+        // Standard ECG paper uses 5mm squares, but we need much larger on screen
+        const val MM_TO_PIXEL_RATIO = 6.0f  // Increased from 1.2f to 6.0f
+
         const val PIXELS_PER_GRID = GRID_SIZE_MM * MM_TO_PIXEL_RATIO
-        const val MILLIVOLTS_PER_GRID = 0.5f // Standard ECG calibration (0.5mV per 5mm)
-        const val DEFAULT_BPM = 70 // Default heart rate
-        const val ABNORMALITY_THRESHOLD = 0.7f // Threshold for highlighting abnormalities
+        const val MILLIVOLTS_PER_GRID = 0.5f
+        const val DEFAULT_BPM = 70
+        const val ABNORMALITY_THRESHOLD = 0.7f
+
+        var MINOR_GRID_DIVISIONS = 5
     }
 
     // Drawing properties
@@ -47,13 +61,13 @@ class EcgVisualizationView @JvmOverloads constructor(
 
     // Update the grid paints to make minor grid lines much more subtle
     private val gridPaint = Paint().apply {
-        color = Color.parseColor("#FFCCD5") // Much lighter pink for minor grid lines
+        color = Color.BLACK // Much lighter pink for minor grid lines
         strokeWidth = 0.5f // Thinner lines
         style = Paint.Style.STROKE
     }
 
     private val majorGridPaint = Paint().apply {
-        color = Color.parseColor("#FC6C85") // Keep the stronger pink for major grid lines
+        color = Color.GREEN // Keep the stronger pink for major grid lines
         strokeWidth = 1.5f // Slightly thinner than before
         style = Paint.Style.STROKE
     }
@@ -123,26 +137,52 @@ class EcgVisualizationView @JvmOverloads constructor(
      * Connect to the WebSocket to start receiving ECG data
      */
     fun connectToEcgService(scope: CoroutineScope, webSocketService: WebSocketService) {
-        // Disconnect any existing connection
-        disconnectFromEcgService()
+        // Set connection status
+        isConnected = true
 
-        dataCollectionJob = scope.launch(Dispatchers.Main) {
-            webSocketService.ecgDataFlow.collectLatest { jsonString ->
-                processEcgData(jsonString)
-                invalidate() // Trigger redraw with new data
+        // Cancel any existing collection job
+        dataCollectionJob?.cancel()
+
+        // Start collecting data from the WebSocket service
+        dataCollectionJob = scope.launch {
+            try {
+                Log.d("ECG", "Starting to collect ECG data from WebSocket")
+                webSocketService.ecgDataFlow.collectLatest { jsonData ->
+                    Log.d("ECG", "Received data from WebSocket")
+
+                    // Process the ECG data
+                    processEcgData(jsonData)
+
+                    // Update the visual path
+                    updateEcgPath()
+
+                    // Request a redraw on the UI thread
+                    withContext(Dispatchers.Main) {
+                        invalidate()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ECG", "Error collecting ECG data", e)
             }
         }
 
-        isConnected = true
+        // Force UI update to show connection status
+        invalidate()
     }
 
     /**
      * Disconnect from the ECG service
      */
     fun disconnectFromEcgService() {
+        // Cancel the data collection job
         dataCollectionJob?.cancel()
         dataCollectionJob = null
+
+        // Update connection status
         isConnected = false
+
+        // Force UI update to show disconnection status
+        invalidate()
     }
 
     /**
@@ -176,18 +216,22 @@ class EcgVisualizationView @JvmOverloads constructor(
                 }
             }
 
-            // Extract abnormalities
-            val abnormalitiesObj = jsonObject.getJSONObject("abnormalities")
-            val newAbnormalities = mutableMapOf<String, Float>()
+            // Extract abnormalities if present
+            if (jsonObject.has("abnormalities")) {
+                val abnormalitiesObj = jsonObject.getJSONObject("abnormalities")
+                val newAbnormalities = mutableMapOf<String, Float>()
 
-            abnormalitiesObj.keys().forEach { key ->
-                val probability = abnormalitiesObj.getDouble(key).toFloat()
-                newAbnormalities[key] = probability
+                val keys = abnormalitiesObj.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val probability = abnormalitiesObj.getDouble(key).toFloat()
+                    newAbnormalities[key] = probability
+                }
+
+                // Update abnormalities and mark regions for highlighting
+                abnormalities = newAbnormalities
+                updateAbnormalRanges()
             }
-
-            // Update abnormalities and mark regions for highlighting
-            abnormalities = newAbnormalities
-            updateAbnormalRanges()
 
         } catch (e: Exception) {
             // Log error but don't crash
@@ -203,7 +247,7 @@ class EcgVisualizationView @JvmOverloads constructor(
             dataPoints.removeAt(0)
         }
         dataPoints.add(value)
-        updateEcgPath()
+        // Don't call updateEcgPath() here anymore - call it once after adding all points
     }
 
     /**
@@ -224,16 +268,44 @@ class EcgVisualizationView @JvmOverloads constructor(
     /**
      * Update the path used to draw the ECG line
      */
+    // Fix 6: Make sure updateEcgPath() is correctly calculating positions
     private fun updateEcgPath() {
-        if (dataPoints.isEmpty()) return
+        if (dataPoints.isEmpty()) {
+            Log.e("ECG", "updateEcgPath: No data points available")
+            return
+        }
+
+        if (width <= 0 || height <= 0) {
+            Log.e("ECG", "updateEcgPath: Invalid view dimensions: $width x $height")
+            return
+        }
+
+        Log.d("ECG", "Updating path with ${dataPoints.size} points")
 
         ecgPath.reset()
 
         // Calculate center line (0mV reference)
         val centerY = height / 2f
 
+        // Make sure we have valid scaling factors
+        if (pixelsPerDataPoint <= 0f) {
+            pixelsPerDataPoint = width.toFloat() / MAX_DATA_POINTS
+            Log.d("ECG", "Recalculated pixelsPerDataPoint = $pixelsPerDataPoint")
+        }
+
+        if (verticalScale <= 0f) {
+            verticalScale = (PIXELS_PER_GRID * 2) / MILLIVOLTS_PER_GRID
+            Log.d("ECG", "Recalculated verticalScale = $verticalScale")
+        }
+
         // Draw the ECG line
-        var startX = width - (dataPoints.size * pixelsPerDataPoint)
+        var startX = 0f // Start from left edge instead of potentially off-screen
+        if (dataPoints.size >= MAX_DATA_POINTS) {
+            // Only adjust startX if we have a full buffer
+            startX = width - (dataPoints.size * pixelsPerDataPoint)
+        }
+
+        Log.d("ECG", "Path start X = $startX, center Y = $centerY")
 
         ecgPath.moveTo(startX, centerY - (dataPoints[0] * verticalScale))
 
@@ -242,6 +314,8 @@ class EcgVisualizationView @JvmOverloads constructor(
             val y = centerY - (dataPoints[i] * verticalScale)
             ecgPath.lineTo(x, y)
         }
+
+        Log.d("ECG", "Path created with ${dataPoints.size} points")
     }
 
     /**
@@ -270,20 +344,28 @@ class EcgVisualizationView @JvmOverloads constructor(
         updateEcgPath()
     }
 
+    fun getDataPointsCount(): Int {
+        return dataPoints.size
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        // Draw background
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
+        Log.d("ECG", "onDraw: width=$width, height=$height, dataPoints=${dataPoints.size}")
+
 
         // Draw grid
         drawGrid(canvas)
 
-        // Draw normal ECG segments
-        canvas.drawPath(ecgPath, ecgPaint)
+        if (dataPoints.isEmpty()) {
+            Log.e("ECG", "No data points to draw!")
+        } else {
+            // Draw normal ECG segments
+            canvas.drawPath(ecgPath, ecgPaint)
 
-        // Draw abnormal segments with different color
-        drawAbnormalSegments(canvas)
+            // Draw abnormal segments with different color
+            drawAbnormalSegments(canvas)
+        }
 
         // Draw stats and labels
         drawStatsAndLabels(canvas)
@@ -292,44 +374,96 @@ class EcgVisualizationView @JvmOverloads constructor(
     /**
      * Draw the ECG grid background
      */
-    // Update the drawGrid method for better grid rendering
+    // Mobile-optimized grid drawing function
     private fun drawGrid(canvas: Canvas) {
-        // Draw minor grid lines (1mm spacing)
-        val minorGridSize = PIXELS_PER_GRID / 5 // 1mm
+        // Get device screen density to adjust grid appropriately
+        val displayMetrics = context.resources.displayMetrics
+        val density = displayMetrics.density
 
-        // Use alpha to make minor grid lines even more subtle
-        gridPaint.alpha = 100
+        // Calculate grid spacing based on screen density
+        val majorGridSpacing = (PIXELS_PER_GRID * density).toInt().toFloat()
 
-        // Vertical minor grid lines
+        // Draw background
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
+
+        // Create paints with mobile-appropriate colors
+        val minorGridPaint = Paint().apply {
+            color = Color.CYAN // Very light pink
+            strokeWidth = 0.5f * density
+            alpha = 120 // Subtle but visible
+        }
+
+        val majorGridPaint = Paint().apply {
+            color = Color.parseColor("#F44336") // Light pink
+            strokeWidth = 1.0f * density
+            alpha = 200 // More visible
+        }
+
+        // Draw minor grid
+        if (MINOR_GRID_DIVISIONS > 0) {
+            val minorGridSpacing = majorGridSpacing / MINOR_GRID_DIVISIONS
+
+            // Draw minor vertical grid lines
+            var x = 0f
+            while (x < width) {
+                // Skip if this would be a major line
+                if (Math.abs(x % majorGridSpacing) > 0.1f) {
+                    canvas.drawLine(x, 0f, x, height.toFloat(), minorGridPaint)
+                }
+                x += minorGridSpacing
+            }
+
+            // Draw minor horizontal grid lines
+            var y = 0f
+            while (y < height) {
+                // Skip if this would be a major line
+                if (Math.abs(y % majorGridSpacing) > 0.1f) {
+                    canvas.drawLine(0f, y, width.toFloat(), y, minorGridPaint)
+                }
+                y += minorGridSpacing
+            }
+        }
+
+        // Draw major grid lines
+        // Vertical
         var x = 0f
         while (x < width) {
-            canvas.drawLine(x, 0f, x, height.toFloat(), gridPaint)
-            x += minorGridSize
+            canvas.drawLine(x, 0f, x, height.toFloat(), majorGridPaint)
+            x += majorGridSpacing
         }
 
-        // Horizontal minor grid lines
+        // Horizontal
         var y = 0f
         while (y < height) {
-            canvas.drawLine(0f, y, width.toFloat(), y, gridPaint)
-            y += minorGridSize
-        }
-
-        // Draw major grid lines (5mm spacing) with full opacity
-        majorGridPaint.alpha = 255
-
-        // Vertical major grid lines
-        x = 0f
-        while (x < width) {
-            canvas.drawLine(x, 0f, x, height.toFloat(), majorGridPaint)
-            x += PIXELS_PER_GRID
-        }
-
-        // Horizontal major grid lines
-        y = 0f
-        while (y < height) {
             canvas.drawLine(0f, y, width.toFloat(), y, majorGridPaint)
-            y += PIXELS_PER_GRID
+            y += majorGridSpacing
         }
+    }
+
+    // Create a method to adjust grid density based on screen size or user preference
+    fun setGridDensity(densityLevel: GridDensity) {
+        when (densityLevel) {
+            GridDensity.HIGH -> {
+                // Similar to paper ECG - dense grid
+                MINOR_GRID_DIVISIONS = 5
+            }
+            GridDensity.MEDIUM -> {
+                // Compromise - show some minor lines
+                MINOR_GRID_DIVISIONS = 2
+            }
+            GridDensity.LOW -> {
+                // Only major grid lines
+                MINOR_GRID_DIVISIONS = 0
+            }
+        }
+        invalidate()
+    }
+
+    // Enum for grid density options
+    enum class GridDensity {
+        HIGH,   // Paper-like dense grid
+        MEDIUM, // Some minor lines
+        LOW     // Only major lines
     }
 
     /**
@@ -407,27 +541,33 @@ class EcgVisualizationView @JvmOverloads constructor(
      * Simulate ECG data for preview mode
      */
     fun simulateEcgData() {
-        // Sample ECG data points representing one heartbeat
+        Log.d("ECG", "Starting simulation")
+
+        // Sample ECG data points representing one heartbeat with exaggerated amplitude
         val sampleEcgPattern = listOf(
-            0.0f, 0.0f, 0.1f, 0.2f, 0.0f, -0.1f, -0.1f, 0.0f, 0.5f, 1.5f, 1.0f,
-            -0.5f, -1.0f, -0.3f, 0.0f, 0.2f, 0.4f, 0.3f, 0.0f, -0.1f, 0.0f
+            0.0f, 0.0f, 0.1f, 0.2f, 0.0f, -0.1f, -0.1f, 0.0f, 0.5f, 2.5f, 2.0f,
+            -1.0f, -2.0f, -0.5f, 0.0f, 0.4f, 0.8f, 0.5f, 0.0f, -0.1f, 0.0f
         )
 
         // Clear existing data
         dataPoints.clear()
 
         // Fill with sample pattern repeated
-        while (dataPoints.size < MAX_DATA_POINTS) {
+        val repeats = MAX_DATA_POINTS / sampleEcgPattern.size + 1
+        for (i in 0 until repeats) {
             for (value in sampleEcgPattern) {
                 if (dataPoints.size < MAX_DATA_POINTS) {
-                    addDataPoint(value)
+                    dataPoints.add(value) // Add directly instead of using addDataPoint to isolate issues
                 } else {
                     break
                 }
             }
         }
 
+        Log.d("ECG", "Added ${dataPoints.size} data points")
+
         // Simulate abnormal section for preview
+        abnormalRanges.clear()
         abnormalRanges.add((MAX_DATA_POINTS - 100) until MAX_DATA_POINTS)
 
         // Set heart rate
@@ -439,6 +579,18 @@ class EcgVisualizationView @JvmOverloads constructor(
             "AF" to 0.3f
         )
 
+        // Initialize scaling if not done yet
+        if (pixelsPerDataPoint <= 0f) {
+            pixelsPerDataPoint = width.toFloat() / MAX_DATA_POINTS
+            Log.d("ECG", "Set pixelsPerDataPoint = $pixelsPerDataPoint")
+        }
+
+        if (verticalScale <= 0f) {
+            verticalScale = (PIXELS_PER_GRID * 2) / MILLIVOLTS_PER_GRID
+            Log.d("ECG", "Set verticalScale = $verticalScale")
+        }
+
+        // Update path and force redraw
         updateEcgPath()
         invalidate()
     }
