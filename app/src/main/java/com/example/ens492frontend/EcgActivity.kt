@@ -1,6 +1,5 @@
 package com.example.ens492frontend
 
-import WebSocketService
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -10,6 +9,7 @@ import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
@@ -42,29 +42,12 @@ class EcgActivity : AppCompatActivity() {
         connectButton = findViewById(R.id.connectButton)
         statusText = findViewById(R.id.statusText)
 
-        // If you have grid density controls in your layout, uncomment this
-        // gridDensityGroup = findViewById(R.id.gridDensityGroup)
-        // setupGridDensityControls()
-
         // Setup WebSocket service
         webSocketService = WebSocketService()
 
         // Setup UI components
         setupLeadSelector()
         setupConnectButton()
-
-        // Set default grid density
-        ecgVisualization.setGridDensity(EcgVisualizationView.GridDensity.HIGH)
-
-        // Use ViewTreeObserver to ensure the view is ready before simulating
-        ecgVisualization.viewTreeObserver.addOnGlobalLayoutListener {
-            if (ecgVisualization.width > 0 && ecgVisualization.height > 0) {
-                Log.d("ECG", "View layout complete, running initial simulation")
-                runOnUiThread {
-                    ecgVisualization.simulateEcgData()
-                }
-            }
-        }
     }
 
     private fun setupLeadSelector() {
@@ -90,21 +73,27 @@ class EcgActivity : AppCompatActivity() {
 
     private fun setupConnectButton() {
         connectButton.setOnClickListener {
+            // Toggle connection state FIRST
+            isConnected = !isConnected
+
+            // Then act on the new state
             if (isConnected) {
-                disconnectFromEcgService()
-                connectButton.text = "Connect"
-                statusText.text = "Disconnected"
-                statusText.setTextColor(getColor(android.R.color.holo_red_dark))
-            } else {
+                Log.d("ECG", "Connecting to ECG service...")
                 connectToEcgService()
                 connectButton.text = "Disconnect"
                 statusText.text = "Connected"
                 statusText.setTextColor(getColor(android.R.color.holo_green_dark))
+            } else {
+                Log.d("ECG", "Disconnecting from ECG service...")
+                disconnectFromEcgService()
+                connectButton.text = "Connect"
+                statusText.text = "Disconnected"
+                statusText.setTextColor(getColor(android.R.color.holo_red_dark))
             }
-            isConnected = !isConnected
+
+            Log.d("ECG", "Connect button processed, new state: $isConnected")
         }
     }
-
 
     private fun connectToEcgService() {
         // Connect the WebSocket service
@@ -112,25 +101,18 @@ class EcgActivity : AppCompatActivity() {
             try {
                 Log.d("ECG", "Connecting to WebSocket service")
 
+                // Connect the visualization to receive data FIRST
+                ecgVisualization.connectToEcgService(lifecycleScope, webSocketService)
+
                 // If using real server connection
                 if (!isInEditMode) {
                     webSocketService.connect()
                     Log.d("ECG", "Connected to real WebSocket server")
                 }
-                // For simulation mode
-                else {
-                    simulationJob = lifecycleScope.launch {
-                        Log.d("ECG", "Starting simulation job")
-                        while (isActive && isConnected) {
-                            Log.d("ECG", "Sending simulated data")
-                            webSocketService.sendSimulatedData()
-                            delay(200) // Send new data every 200ms for smoother animation
-                        }
-                    }
-                }
 
-                // Connect the visualization to start receiving data
-                ecgVisualization.connectToEcgService(lifecycleScope, webSocketService)
+                // Start simulation job
+                webSocketService.startSimulation(lifecycleScope)
+
 
             } catch (e: Exception) {
                 Log.e("ECG", "Error connecting to ECG service", e)

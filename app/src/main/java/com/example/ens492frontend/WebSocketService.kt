@@ -1,3 +1,5 @@
+package com.example.ens492frontend
+
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,12 +14,17 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
+/**
+ * Service to handle WebSocket connections for ECG data
+ */
 class WebSocketService {
     companion object {
         private const val TAG = "WebSocketService"
-        private const val ECG_WEBSOCKET_URL = "ws://your-ecg-server-url/ws" // Update this with your actual server URL
+        private const val ECG_WEBSOCKET_URL = "ws://your-ecg-server-url/ws"
         private const val RECONNECT_DELAY = 5000L // 5 seconds delay for reconnect attempts
+        private const val NUM_LEADS = 12 // Standard 12-lead ECG
     }
 
     private val client = OkHttpClient.Builder()
@@ -25,10 +32,11 @@ class WebSocketService {
         .build()
 
     private var webSocket: WebSocket? = null
+    private var simulationJob: kotlinx.coroutines.Job? = null
 
-    // Shared flow to broadcast ECG data to consumers
-    private val _ecgDataFlow = MutableSharedFlow<String>(replay = 0)
-    val ecgDataFlow: SharedFlow<String> = _ecgDataFlow
+    // Data flow of lead data map (lead index -> float array of values)
+    private val _ecgDataFlow = MutableSharedFlow<Map<Int, FloatArray>>(replay = 0)
+    val ecgDataFlow: SharedFlow<Map<Int, FloatArray>> = _ecgDataFlow
 
     /**
      * Connect to the WebSocket server
@@ -55,6 +63,7 @@ class WebSocketService {
     fun disconnect() {
         webSocket?.close(1000, "User disconnected")
         webSocket = null
+        stopSimulation()
         Log.d(TAG, "WebSocket disconnected")
     }
 
@@ -68,13 +77,32 @@ class WebSocketService {
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                // When we receive a message, emit it to the flow
-                _ecgDataFlow.tryEmit(text)
+                // Process incoming message
+                try {
+                    // Format: leadIndex:value1,value2,value3|leadIndex:value1,value2,value3|...
+                    val leadDataMap = mutableMapOf<Int, FloatArray>()
+
+                    // Split by lead sections
+                    val leadSections = text.split("|")
+                    for (section in leadSections) {
+                        val parts = section.split(":", limit = 2)
+                        if (parts.size == 2) {
+                            val leadIndex = parts[0].toInt()
+                            val values = parts[1].split(",").map { it.toFloat() }.toFloatArray()
+                            leadDataMap[leadIndex] = values
+                        }
+                    }
+
+                    if (leadDataMap.isNotEmpty()) {
+                        _ecgDataFlow.tryEmit(leadDataMap)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing ECG data", e)
+                }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e(TAG, "WebSocket failure: ${t.message}", t)
-                // Schedule reconnect attempt
                 handleReconnect()
             }
 
@@ -99,65 +127,83 @@ class WebSocketService {
     }
 
     /**
-     * For testing: send simulated ECG data
+     * Start simulation mode (for testing without a server)
      */
-    fun sendSimulatedData() {
-        // Create simulated multi-lead ECG data in the same format as the backend
-        val simulatedJson = buildSimulatedEcgJson()
-        _ecgDataFlow.tryEmit(simulatedJson)
+    fun startSimulation(scope: CoroutineScope) {
+        // Stop any existing simulation
+        stopSimulation()
+
+        simulationJob = scope.launch {
+            while (true) {
+                // Generate simulated data
+                val simulatedData = generateSimulatedEcgData()
+
+                // Emit to flow
+                _ecgDataFlow.emit(simulatedData)
+
+                // Delay between data packets
+                delay(150) 
+            }
+        }
     }
 
     /**
-     * Build simulated ECG JSON data matching the format from the backend
+     * Stop simulation mode
      */
-    private fun buildSimulatedEcgJson(): String {
-        // Basic ECG waveform pattern
-        val pattern = listOf(0.0f, 0.0f, 0.1f, 0.2f, 0.0f, -0.1f, -0.1f, 0.0f, 0.5f, 1.5f, 1.0f,
-            -0.5f, -1.0f, -0.3f, 0.0f, 0.2f, 0.4f, 0.3f, 0.0f, -0.1f, 0.0f)
+    fun stopSimulation() {
+        simulationJob?.cancel()
+        simulationJob = null
+    }
 
-        // Create data points for each lead (slightly different for each lead)
-        val leadsData = StringBuilder()
-        for (leadIndex in 0 until 12) { // 12 leads
-            if (leadIndex > 0) leadsData.append(",")
-            leadsData.append("{")
-            leadsData.append("\"lead\": ${leadIndex + 1},")
-            leadsData.append("\"data\": [")
+    /**
+     * Generate simulated ECG data for all leads
+     */
+    fun generateSimulatedEcgData(): Map<Int, FloatArray> {
+        val result = mutableMapOf<Int, FloatArray>()
 
-            // Add 20 data points with slight variation per lead
-            val dataPoints = StringBuilder()
-            for (i in 0 until 20) {
-                if (i > 0) dataPoints.append(",")
-                val baseValue = pattern[i % pattern.size]
-                val variation = (leadIndex * 0.1f) * baseValue
-                dataPoints.append(baseValue + variation)
+        // Basic ECG waveform pattern (PQRST complex)
+        val basePattern = floatArrayOf(
+            0.0f, 0.0f, 0.1f, 0.2f, 0.0f, -0.1f, -0.1f, 0.0f, 0.5f, 1.5f, 1.0f,
+            -0.5f, -1.0f, -0.3f, 0.0f, 0.2f, 0.4f, 0.3f, 0.0f, -0.1f, 0.0f
+        )
+
+        // Generate data for each lead
+        for (leadIndex in 0 until NUM_LEADS) {
+            // Create data points with lead-specific variations
+            val dataPoints = FloatArray(20) // 20 data points per update
+
+            for (i in dataPoints.indices) {
+                val baseValue = basePattern[i % basePattern.size]
+
+                // Each lead has a different morphology
+                val leadAmplitude = when (leadIndex) {
+                    0 -> 1.0f    // Lead I
+                    1 -> 1.2f    // Lead II
+                    2 -> 0.7f    // Lead III
+                    3 -> -0.5f   // aVR
+                    4 -> 0.8f    // aVL
+                    5 -> 1.1f    // aVF
+                    6 -> 1.7f    // V1
+                    7 -> 2.0f    // V2
+                    8 -> 2.5f    // V3
+                    9 -> 2.2f    // V4
+                    10 -> 1.8f   // V5
+                    11 -> 1.5f   // V6
+                    else -> 1.0f
+                }
+
+                // Lead-specific variation
+                val leadVariation = leadAmplitude * baseValue
+
+                // Small random noise
+                val noise = (Random.nextFloat() - 0.5f) * 0.05f
+
+                dataPoints[i] = leadVariation + noise
             }
-            leadsData.append(dataPoints)
-            leadsData.append("]")
-            leadsData.append("}")
+
+            result[leadIndex] = dataPoints
         }
 
-        // Random heart rate between 60-100
-        val heartRate = (60 + (Math.random() * 40)).toInt()
-
-        // Random abnormality detection (occasionally)
-        val hasAbnormality = Math.random() > 0.7
-        val abnormalityValue = if (hasAbnormality) 0.75f + (Math.random() * 0.2).toFloat() else 0.1f
-
-        // Build the complete JSON
-        return """
-        {
-            "timestamp": ${System.currentTimeMillis()},
-            "heartRate": $heartRate,
-            "leads": [$leadsData],
-            "abnormalities": {
-                "RBBB": ${if (hasAbnormality) abnormalityValue else 0.1f},
-                "AF": ${if (!hasAbnormality && Math.random() > 0.8) 0.8f else 0.05f},
-                "1dAVb": 0.05,
-                "LBBB": 0.02,
-                "SB": ${if (heartRate < 65) 0.9f else 0.0f},
-                "ST": ${if (heartRate > 95) 0.9f else 0.0f}
-            }
-        }
-        """.trimIndent()
+        return result
     }
 }
