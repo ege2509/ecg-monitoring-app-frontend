@@ -1,5 +1,6 @@
 package com.example.ens492frontend
 
+import android.content.ContentValues.TAG
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -12,10 +13,16 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class EcgActivity : AppCompatActivity() {
 
@@ -80,6 +87,7 @@ class EcgActivity : AppCompatActivity() {
             if (isConnected) {
                 Log.d("ECG", "Connecting to ECG service...")
                 connectToEcgService()
+                startContinuousTest()
                 connectButton.text = "Disconnect"
                 statusText.text = "Connected"
                 statusText.setTextColor(getColor(android.R.color.holo_green_dark))
@@ -95,24 +103,54 @@ class EcgActivity : AppCompatActivity() {
         }
     }
 
+    private fun startContinuousTest() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("${ApiClient.baseUrl}/api/ecg/test/continuous/1?seconds=30&intervalMs=150&includeAbnormal=true")
+                    .post("".toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        Log.d(TAG, "Continuous test started successfully")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@EcgActivity, "Continuous test started", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Log.e(TAG, "Error starting test: ${response.code}, body: ${response.body?.string()}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception starting continuous test: ${e.message}", e)
+            }
+        }
+    }
+
+
+
     private fun connectToEcgService() {
         // Connect the WebSocket service
         lifecycleScope.launch {
             try {
-                Log.d("ECG", "Connecting to WebSocket service")
+                Log.d("ECG", "Connecting to WebSocket service, isInEditMode = $isInEditMode")
 
-                // Connect the visualization to receive data FIRST
+                // Connect the visualization to receive data
                 ecgVisualization.connectToEcgService(lifecycleScope, webSocketService)
 
-                // If using real server connection
-                if (!isInEditMode) {
+                if (isInEditMode) {
+                    // Start simulation for development
+                    Log.d("ECG", "Running in edit mode - starting simulation")
+                    //webSocketService.startSimulation(lifecycleScope)
+                } else {
+                    // Connect to real WebSocket server for production
+                    Log.d("ECG", "Running in production mode - connecting to real server")
                     webSocketService.connect()
+                    // Make sure simulation is stopped
+                    webSocketService.stopSimulation()
                     Log.d("ECG", "Connected to real WebSocket server")
                 }
-
-                // Start simulation job
-                webSocketService.startSimulation(lifecycleScope)
-
 
             } catch (e: Exception) {
                 Log.e("ECG", "Error connecting to ECG service", e)
@@ -127,17 +165,17 @@ class EcgActivity : AppCompatActivity() {
     }
 
     private fun disconnectFromEcgService() {
-        // Cancel simulation if running
-        simulationJob?.cancel()
-        simulationJob = null
+        // Make sure to stop simulation if it's running
+        webSocketService.stopSimulation()
 
         // Disconnect the WebSocket
         webSocketService.disconnect()
 
         // Disconnect the visualization
         ecgVisualization.disconnectFromEcgService()
-    }
 
+        Log.d("ECG", "Fully disconnected from ECG service")
+    }
     override fun onDestroy() {
         super.onDestroy()
         // Make sure to disconnect on activity destroy
@@ -151,5 +189,5 @@ class EcgActivity : AppCompatActivity() {
      * Set to true during development for simulated data
      */
     private val isInEditMode: Boolean
-        get() = true  // Change to false for production with real server
+        get() = false  // Change to false for production with real server
 }
