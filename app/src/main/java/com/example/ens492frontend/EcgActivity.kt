@@ -87,7 +87,7 @@ class EcgActivity : AppCompatActivity() {
             if (isConnected) {
                 Log.d("ECG", "Connecting to ECG service...")
                 connectToEcgService()
-                startContinuousTest()
+                //startContinuousTest()
                 connectButton.text = "Disconnect"
                 statusText.text = "Connected"
                 statusText.setTextColor(getColor(android.R.color.holo_green_dark))
@@ -147,7 +147,7 @@ class EcgActivity : AppCompatActivity() {
                     // Connect to real WebSocket server for production
                     Log.d("ECG", "Running in production mode - connecting to real server")
                     webSocketService.connect()
-                    // Make sure simulation is stopped
+
                     webSocketService.stopSimulation()
                     Log.d("ECG", "Connected to real WebSocket server")
                 }

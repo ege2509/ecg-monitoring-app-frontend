@@ -115,7 +115,7 @@ class EcgVisualizationView @JvmOverloads constructor(
     }
 
     private val ecgPaint = Paint().apply {
-        color = Color.parseColor("#32CD32") // ECG green
+        color = Color.BLACK// ECG Black
         strokeWidth = 3f
         style = Paint.Style.STROKE
         isAntiAlias = true
