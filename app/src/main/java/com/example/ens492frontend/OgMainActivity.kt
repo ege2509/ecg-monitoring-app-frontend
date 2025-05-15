@@ -22,7 +22,7 @@ class OgMainActivity : AppCompatActivity() {
         // Set the OnClickListener to start a new activity
         getStartedButton.setOnClickListener {
             // Create an Intent to start the new Activity
-            val intent = Intent(this, SignUpActivity::class.java)
+            val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
         }
 

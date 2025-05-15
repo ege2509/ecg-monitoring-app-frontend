@@ -29,7 +29,8 @@ class EcgActivity : AppCompatActivity() {
     private lateinit var ecgVisualization: EcgVisualizationView
     private lateinit var leadSelector: Spinner
     private lateinit var connectButton: Button
-    private lateinit var statusText: TextView
+    private lateinit var saveButton: Button
+    //private lateinit var statusText: TextView
     private lateinit var gridDensityGroup: RadioGroup
 
     private lateinit var webSocketService: WebSocketService
@@ -47,7 +48,8 @@ class EcgActivity : AppCompatActivity() {
         ecgVisualization = findViewById(R.id.ecgVisualization)
         leadSelector = findViewById(R.id.leadSelector)
         connectButton = findViewById(R.id.connectButton)
-        statusText = findViewById(R.id.statusText)
+        saveButton = findViewById(R.id.saveButton)
+        //statusText = findViewById(R.id.statusText)
 
         // Setup WebSocket service
         webSocketService = WebSocketService()
@@ -89,17 +91,64 @@ class EcgActivity : AppCompatActivity() {
                 connectToEcgService()
                 //startContinuousTest()
                 connectButton.text = "Disconnect"
-                statusText.text = "Connected"
-                statusText.setTextColor(getColor(android.R.color.holo_green_dark))
+               // statusText.text = "Connected"
+              //  statusText.setTextColor(getColor(android.R.color.holo_green_dark))
             } else {
                 Log.d("ECG", "Disconnecting from ECG service...")
                 disconnectFromEcgService()
                 connectButton.text = "Connect"
-                statusText.text = "Disconnected"
-                statusText.setTextColor(getColor(android.R.color.holo_red_dark))
+                //statusText.text = "Disconnected"
+               // statusText.setTextColor(getColor(android.R.color.holo_red_dark))
             }
 
             Log.d("ECG", "Connect button processed, new state: $isConnected")
+        }
+    }
+
+    private fun saveRecording() {
+        // Check if we're connected and have data to save
+        if (!isConnected) {
+            Toast.makeText(this, "Not connected to ECG service", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (!ecgVisualization.hasAnyData()) {
+            Toast.makeText(this, "No ECG data to save", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Show a loading toast
+        Toast.makeText(this, "Saving recording...", Toast.LENGTH_SHORT).show()
+
+        // Get the user ID - replace with your actual user ID retrieval method
+        val userId = 1L  // Replace with actual user ID
+
+        // Make the API call
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("${ApiClient.baseUrl}/api/ecg/save-recording?userId=$userId")
+                    .post("".toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    withContext(Dispatchers.Main) {
+                        if (response.isSuccessful) {
+                            Toast.makeText(this@EcgActivity, "Recording saved successfully", Toast.LENGTH_SHORT).show()
+                            Log.d("ECG", "Recording saved successfully")
+                        } else {
+                            Toast.makeText(this@EcgActivity, "Failed to save recording", Toast.LENGTH_SHORT).show()
+                            Log.e("ECG", "Error saving recording: ${response.code}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ECG", "Exception while saving recording", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@EcgActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -155,8 +204,8 @@ class EcgActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("ECG", "Error connecting to ECG service", e)
                 runOnUiThread {
-                    statusText.text = "Connection Failed"
-                    statusText.setTextColor(getColor(android.R.color.holo_red_dark))
+                    //statusText.text = "Connection Failed"
+                    //statusText.setTextColor(getColor(android.R.color.holo_red_dark))
                     isConnected = false
                     connectButton.text = "Connect"
                 }

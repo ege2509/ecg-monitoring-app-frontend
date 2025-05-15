@@ -28,7 +28,7 @@ data class LoginRequest(
 
 @Serializable
 data class BasicResponse(
-    val success: Boolean,
+    val success: Boolean?=null,
     val message: String,
     val userId: Long? = null,
     val token: String? = null
