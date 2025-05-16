@@ -39,7 +39,7 @@ class EcgVisualizationView @JvmOverloads constructor(
     // Constants
     companion object {
         private const val TAG = "EcgVisualizationView"
-        const val MAX_VISIBLE_DATA_POINTS = 500       // Number of points visible at once
+        const val MAX_VISIBLE_DATA_POINTS = 1000       // Number of points visible at once
         const val MAX_TOTAL_DATA_POINTS = 10000       // Total history to maintain
         const val GRID_SIZE_MM = 5
         const val MM_TO_PIXEL_RATIO = 6.0f
@@ -87,10 +87,13 @@ class EcgVisualizationView @JvmOverloads constructor(
     // Data model - map of lead index to data points
     private val allLeadsDataPoints = mutableMapOf<Int, LinkedList<Float>>()
 
+    private val heartRateData = mutableListOf<Int>() // To store heart rate values
+    private var currentHeartRate = 0 // To store the most recent heart rate
+
     // Recording state
     private var isRecording = true             // Whether actively recording data
     private var currentLeadIndex = DEFAULT_LEAD_INDEX
-    private var heartRate = DEFAULT_BPM
+    private var heartRate = currentHeartRate
     private var isConnected = false
 
     // Replay system state
@@ -153,7 +156,7 @@ class EcgVisualizationView @JvmOverloads constructor(
         color = Color.BLACK
         strokeWidth = 3f
         style = Paint.Style.STROKE
-        isAntiAlias = true
+        isAntiAlias = false
     }
 
     private val abnormalEcgPaint = Paint().apply {
@@ -342,6 +345,15 @@ class EcgVisualizationView @JvmOverloads constructor(
                         invalidate()
                     }
                 }
+
+
+                launch {
+                    webSocketService.heartRateFlow.collectLatest { heartRate ->
+                        withContext(Dispatchers.Main) {
+                            updateHeartRate(heartRate)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error collecting ECG data", e)
             }
@@ -365,6 +377,7 @@ class EcgVisualizationView @JvmOverloads constructor(
      * Process the incoming ECG data for all leads
      */
     private fun processAllEcgData(leadDataMap: Map<Int, FloatArray>) {
+
         // Process all leads in the data map
         leadDataMap.forEach { (leadIndex, dataPoints) ->
             if (leadIndex in 0 until NUM_LEADS) {
@@ -885,6 +898,9 @@ class EcgVisualizationView @JvmOverloads constructor(
         updateMaxScrollOffset()
         updateEcgPath()
 
+        heartRateData.clear()
+        currentHeartRate = 0
+
         // Generate a new recording session ID
         recordingSessionId = "recording_" + System.currentTimeMillis()
 
@@ -894,6 +910,12 @@ class EcgVisualizationView @JvmOverloads constructor(
         invalidate()
     }
 
+    // Method to handle heart rate updates
+    fun updateHeartRate(newHeartRate: Int) {
+        this.heartRate = newHeartRate
+        // Invalidate to refresh the display
+        invalidate()
+    }
     /**
      * Check if we have any data in any leads
      */
@@ -988,67 +1010,67 @@ class EcgVisualizationView @JvmOverloads constructor(
 
 }
 
-    /**
-     * OPTIONAL: For real implementations, methods to save/load recordings from database
-     * These would be implemented with your database solution (Room, etc.)
-     */
+/**
+ * OPTIONAL: For real implementations, methods to save/load recordings from database
+ * These would be implemented with your database solution (Room, etc.)
+ */
 
-    /**
-     * Load a specific recording from the database
-     */
-    //fun loadRecording(recordingId: String, scope: CoroutineScope) {
-        // This would load a saved recording by ID from your database
-        // For implementation, you'd need:
-        // - A DAO method to query the recording
-        // - A model class to represent saved data
-        // - Logic to convert from saved format to our LinkedList structure
+/**
+ * Load a specific recording from the database
+ */
+//fun loadRecording(recordingId: String, scope: CoroutineScope) {
+// This would load a saved recording by ID from your database
+// For implementation, you'd need:
+// - A DAO method to query the recording
+// - A model class to represent saved data
+// - Logic to convert from saved format to our LinkedList structure
 
-        // Example pseudocode:
-        /*
-        scope.launch {
-            // Clear existing data
-            clearRecording()
+// Example pseudocode:
+/*
+scope.launch {
+    // Clear existing data
+    clearRecording()
 
-            // Load recording from database
-            val recording = ecgDao.getRecordingById(recordingId)
+    // Load recording from database
+    val recording = ecgDao.getRecordingById(recordingId)
 
-            // Set the recording session ID
-            recordingSessionId = recordingId
+    // Set the recording session ID
+    recordingSessionId = recordingId
 
-            // Load data for each lead
-            for (leadData in recording.leadData) {
-                val leadIndex = leadData.leadIndex
-                val dataPoints = leadData.dataPoints
+    // Load data for each lead
+    for (leadData in recording.leadData) {
+        val leadIndex = leadData.leadIndex
+        val dataPoints = leadData.dataPoints
 
-                // Add to our data structure
-                allLeadsDataPoints[leadIndex]?.addAll(dataPoints)
+        // Add to our data structure
+        allLeadsDataPoints[leadIndex]?.addAll(dataPoints)
 
-                // Load abnormalities
-                abnormalitiesByLead[leadIndex]?.addAll(leadData.abnormalities)
-                abnormalRangesByLead[leadIndex]?.addAll(leadData.abnormalRanges)
-            }
-
-            // Update heart rate
-            heartRate = recording.heartRate
-
-            // Mark as having data and not recording
-            hasRecordedData = true
-            isRecording = false
-
-            // Update the view
-            withContext(Dispatchers.Main) {
-                updateMaxScrollOffset()
-                updateEcgPath()
-                invalidate()
-            }
-        }
-
+        // Load abnormalities
+        abnormalitiesByLead[leadIndex]?.addAll(leadData.abnormalities)
+        abnormalRangesByLead[leadIndex]?.addAll(leadData.abnormalRanges)
     }
 
-    /**
-     * Get list of available leads that have data
-     */
-    fun getAvailableLeads(): List<Int> {
-        return allLeadsDataPoints.filter { (_, data) -> data.isNotEmpty() }.keys.toList()
+    // Update heart rate
+    heartRate = recording.heartRate
+
+    // Mark as having data and not recording
+    hasRecordedData = true
+    isRecording = false
+
+    // Update the view
+    withContext(Dispatchers.Main) {
+        updateMaxScrollOffset()
+        updateEcgPath()
+        invalidate()
     }
+}
+
+}
+
+/**
+* Get list of available leads that have data
+*/
+fun getAvailableLeads(): List<Int> {
+return allLeadsDataPoints.filter { (_, data) -> data.isNotEmpty() }.keys.toList()
+}
 }*/

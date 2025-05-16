@@ -1,10 +1,10 @@
-package com.yourapp.api.models
-
+package com.example.ens492frontend.models
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class User(
     val id: Long? = null,
+    val name: String,
     val email: String,
     val password: String? = null,
     val age: Int? = null,

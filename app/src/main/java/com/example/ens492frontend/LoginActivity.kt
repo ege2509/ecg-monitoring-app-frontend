@@ -10,7 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.lifecycle.lifecycleScope
-import com.yourapp.api.models.LoginRequest
+import com.example.ens492frontend.models.LoginRequest
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -47,45 +47,48 @@ class LoginActivity : AppCompatActivity() {
         val email = emailEditText.text.toString().trim()
         val password = passwordEditText.text.toString().trim()
 
-        // Validate input fields
         if (email.isEmpty()) {
             emailEditText.error = "Email is required"
             return
         }
-
         if (password.isEmpty()) {
             passwordEditText.error = "Password is required"
             return
         }
 
-        // Create login request
         val loginRequest = LoginRequest(email, password)
 
-        // Make API call using Ktor client
         lifecycleScope.launch {
             try {
                 val response = UserApi.login(loginRequest)
 
-                // Handle successful response
-                Toast.makeText(
-                    this@LoginActivity,
-                    "Login successful: ${response.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+                if (response.success == true) {
+                    // Save userId in SharedPreferences
+                    val sharedPref = getSharedPreferences("user_prefs", MODE_PRIVATE)
+                    with(sharedPref.edit()) {
+                        response.userId?.let { putLong("userId", it) }
+                        apply()
+                    }
 
-                // Save user session or token if needed
-                // If your API returns a token, you would use it like:
-                // response.token?.let { token ->
-                //     SessionManager.saveAuthSession(this@LoginActivity, token, userId)
-                // }
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Login successful: ${response.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
-                // Navigate to main activity
-                val intent = Intent(this@LoginActivity, HomeActivity::class.java)
-                startActivity(intent)
-                finish()
+                    // Navigate to main activity
+                    val intent = Intent(this@LoginActivity, HomeActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Login failed: ${response.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
 
             } catch (e: Exception) {
-                // Handle error
                 Log.e("LoginActivity", "Login failed", e)
                 Toast.makeText(
                     this@LoginActivity,
@@ -95,6 +98,7 @@ class LoginActivity : AppCompatActivity() {
             }
         }
     }
+
 
     // This is the method referenced in your XML for signup button
     fun signInClicked(view: View) {

@@ -1,6 +1,10 @@
 package com.example.ens492frontend
 
-import com.yourapp.api.models.*
+import com.example.ens492frontend.ApiClient.client
+import com.example.ens492frontend.models.BasicResponse
+import com.example.ens492frontend.models.LoginRequest
+import com.example.ens492frontend.models.RegisterRequest
+import com.example.ens492frontend.models.User
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.client.statement.HttpResponse
@@ -27,4 +31,8 @@ object UserApi {
             contentType(ContentType.Application.Json)
             setBody(userDetails)
         }.body()
+
+    suspend fun getUser(userId: Long): HttpResponse {
+        return client.get("${ApiClient.baseUrl}/users/$userId")
+    }
 }

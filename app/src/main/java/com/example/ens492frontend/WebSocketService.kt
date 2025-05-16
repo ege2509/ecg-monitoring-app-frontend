@@ -5,7 +5,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -41,7 +44,8 @@ class WebSocketService {
     val ecgDataFlow: SharedFlow<Map<Int, FloatArray>> = _ecgDataFlow
 
     // Heart rate data flow
-    private val _heartRateFlow = MutableSharedFlow<Int>(replay = 0)
+    private val _heartRateFlow = MutableStateFlow(0)
+    val heartRateFlow: StateFlow<Int> = _heartRateFlow.asStateFlow()
 
     // Abnormalities data flow
     private val _abnormalitiesFlow = MutableSharedFlow<Map<String, Float>>(replay = 0)
@@ -106,6 +110,8 @@ class WebSocketService {
                     val timestamp = jsonObject.optLong("timestamp")
                     val heartRate = jsonObject.optInt("heartRate", 0)
                     Log.d(TAG, "Timestamp: $timestamp, Heart Rate: $heartRate")
+
+                    _heartRateFlow.tryEmit(heartRate)
 
                     // Initialize leadDataMap
                     val leadDataMap = mutableMapOf<Int, FloatArray>()
