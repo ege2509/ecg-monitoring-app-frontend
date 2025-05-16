@@ -200,7 +200,7 @@
 
             <!-- Last Monitorings Container -->
             <LinearLayout
-                android:id="@+id/lastMonitoringsContainer"
+                android:id="@+id/recordingsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"

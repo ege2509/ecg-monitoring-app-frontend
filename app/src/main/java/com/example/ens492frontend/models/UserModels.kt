@@ -33,3 +33,21 @@ data class BasicResponse(
     val userId: Long? = null,
     val token: String? = null
 )
+@Serializable
+data class EcgRecordingResponse(
+    val id: Long,
+    val heartRate: Double?,
+    val recordingDate: String,
+    val diagnosis: String
+)
+@Serializable
+data class EcgRecording(
+    val id: Long,
+    val medicalInfoId: Long,
+    val heartRate: Int,
+    val diagnosis: String? = null,
+    val sampleRate: Int,
+    val numLeads: Int,
+    val recordingDate: String,
+    val processedData: String
+)
