@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.ens492frontend.models.EcgRecording
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
 
 class RecordingViewActivity : AppCompatActivity() {
 
@@ -61,7 +62,10 @@ class RecordingViewActivity : AppCompatActivity() {
                 val recordingData = UserApi.getRecording(recordingId)
 
                 // Update UI with recording data
-                titleText.text = "ECG Recording - ${recordingData.recordingDate}"
+
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val dateOnly = recordingData.recordingDate.format(formatter)
+                titleText.text = "ECG Recording - $dateOnly"
 
                 // Parse processed data for visualization
                 val processedData = parseProcessedData(recordingData.processedData)
@@ -115,6 +119,8 @@ class RecordingViewActivity : AppCompatActivity() {
 
             try {
                 val leadIndex = leadParts[0].toInt()
+
+
                 val dataPoints = leadParts[1].split(",").mapNotNull {
                     it.trim().toFloatOrNull()
                 }

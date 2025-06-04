@@ -8,21 +8,33 @@
     android:backgroundTint="@color/main_blue"
     tools:context=".SignUpActivity">
 
+    <View
+        android:id="@+id/card"
+        android:layout_width="332dp"
+        android:layout_height="669dp"
+        android:background="@drawable/bg_rounded_card"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.297" />
+
 
     <EditText
         android:id="@+id/firstnameText"
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:text="text"
-        android:textColor="@color/main_blue"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView3" />
+
+
 
     <TextView
         android:id="@+id/textView"
@@ -30,7 +42,7 @@
         android:layout_height="28dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/rounded_textview"
+        android:background="@drawable/rounded_text_whitr"
         android:text="Firstname"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -42,86 +54,80 @@
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="28dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:textColor="@color/main_blue"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/genderText"
-        tools:text="." />
+        app:layout_constraintTop_toBottomOf="@+id/genderText" />
 
     <EditText
         android:id="@+id/passwordText2"
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="100dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:textColor="@color/main_blue"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/genderText"
-        tools:text="." />
+        app:layout_constraintTop_toBottomOf="@+id/genderText" />
 
     <EditText
         android:id="@+id/genderText"
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:textColor="@color/main_blue"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/emailText"
-        tools:text="." />
+        app:layout_constraintTop_toBottomOf="@+id/emailText" />
 
     <EditText
         android:id="@+id/emailText"
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:textColor="@color/main_blue"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/dateofBirthText"
-        tools:text="." />
+        app:layout_constraintTop_toBottomOf="@+id/ageText" />
 
     <EditText
-        android:id="@+id/dateofBirthText"
+        android:id="@+id/ageText"
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:text="dd.mm.yyyy"
-        android:textColor="#989B9E"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/repPasswordText" />
+        app:layout_constraintTop_toBottomOf="@+id/surnameText" />
 
     <EditText
-        android:id="@+id/repPasswordText"
+        android:id="@+id/surnameText"
         android:layout_width="300dp"
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
-        android:background="@drawable/text_outline"
+        android:background="@drawable/text_outline_w"
         android:ems="10"
         android:inputType="textEmailAddress"
-        android:text="e.g. Smith"
-        android:textColor="@color/main_blue"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
@@ -129,28 +135,11 @@
 
 
     <Button
-        android:id="@+id/signUpButton"
-        android:layout_width="236dp"
-        android:layout_height="49dp"
-        android:layout_marginTop="32dp"
-        android:background="@drawable/rounded_button"
-        android:backgroundTint="#E45F2B"
-        android:onClick="signUpClicked"
-        android:text="Import Files"
-        android:textAllCaps="false"
-        android:textColor="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/passwordText2" />
-
-    <Button
         android:id="@+id/signUpButton2"
         android:layout_width="184dp"
         android:layout_height="52dp"
-        android:layout_marginTop="96dp"
-        android:background="@drawable/rounded_button"
-        android:backgroundTint="#E45F2B"
+        android:layout_marginTop="32dp"
+        android:backgroundTint="#3F51B5"
         android:onClick="signUpClicked"
         android:text="Sign Up"
         android:textAllCaps="false"
@@ -167,7 +156,7 @@
         android:layout_marginTop="20dp"
         android:text="Create Your Profile"
         android:textAlignment="center"
-        android:textColor="@color/black"
+        android:textColor="#3F51B5"
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -181,7 +170,7 @@
         android:layout_height="28dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/rounded_textview"
+        android:background="@drawable/rounded_text_whitr"
         android:text="Surname"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -189,15 +178,15 @@
 
     <TextView
         android:id="@+id/textView4"
-        android:layout_width="86dp"
-        android:layout_height="24dp"
+        android:layout_width="34dp"
+        android:layout_height="23dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/rounded_textview"
-        android:text="Date of Birth"
+        android:background="@drawable/rounded_text_whitr"
+        android:text="Age"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/repPasswordText" />
+        app:layout_constraintTop_toBottomOf="@+id/surnameText" />
 
     <TextView
         android:id="@+id/textView6"
@@ -205,11 +194,11 @@
         android:layout_height="23dp"
         android:layout_marginStart="76dp"
         android:layout_marginTop="84dp"
-        android:background="@drawable/rounded_textview"
+        android:background="@drawable/rounded_text_whitr"
         android:text="E-mail"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/repPasswordText" />
+        app:layout_constraintTop_toBottomOf="@+id/surnameText" />
 
     <TextView
         android:id="@+id/textView7"
@@ -217,7 +206,7 @@
         android:layout_height="24dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="12dp"
-        android:background="@drawable/rounded_textview"
+        android:background="@drawable/rounded_text_whitr"
         android:text="Gender"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -229,7 +218,7 @@
         android:layout_height="21dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="16dp"
-        android:background="@drawable/rounded_textview"
+        android:background="@drawable/rounded_text_whitr"
         android:text="Password"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -241,7 +230,7 @@
         android:layout_height="23dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="88dp"
-        android:background="@drawable/rounded_textview"
+        android:background="@drawable/rounded_text_whitr"
         android:text="Re-enter Password"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"

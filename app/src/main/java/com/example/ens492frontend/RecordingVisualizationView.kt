@@ -23,7 +23,7 @@ class RecordingVisualizationView @JvmOverloads constructor(
     }
 
     private val ecgPaint = Paint().apply {
-        color = Color.RED
+        color = Color.BLACK
         strokeWidth = 2f
         style = Paint.Style.STROKE
         isAntiAlias = true
@@ -34,14 +34,14 @@ class RecordingVisualizationView @JvmOverloads constructor(
     }
 
     private val gridPaint = Paint().apply {
-        color = Color.LTGRAY
+        color = Color.parseColor("#fa87af")
         strokeWidth = 1f
         style = Paint.Style.STROKE
         alpha = 100 // Make the grid less intrusive
     }
 
     private val majorGridPaint = Paint().apply {
-        color = Color.LTGRAY
+        color = Color.parseColor("#ed5187")
         strokeWidth = 1.5f
         style = Paint.Style.STROKE
         alpha = 180 // More visible than minor grid lines

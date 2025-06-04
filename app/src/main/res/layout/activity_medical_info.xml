@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@android:color/white"
+            android:elevation="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/back_icon"
+                android:contentDescription="Back"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Medical Info"
+                android:textColor="@android:color/black"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="More options" />
+
+        </LinearLayout>
+
+        <!-- Files Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp"
+            android:paddingVertical="16dp">
+
+            <!-- Files Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Files"
+                    android:textColor="@android:color/black"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnAddFile"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="+ Add New File"
+                    android:textColor="#007AFF"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Files RecyclerView (Dynamic) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewFiles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <!-- Empty State for Files -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyFiles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingVertical="24dp"
+                android:visibility="visible">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/baseline_file_present_24"
+                    android:layout_marginBottom="12dp"
+                    app:tint="#CCCCCC" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No medical files yet"
+                    android:textColor="#999999"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add your first medical document"
+                    android:textColor="#CCCCCC"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- View All Button (Only shown when files exist) -->
+            <Button
+                android:id="@+id/btnViewAllFiles"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_rounded_card"
+                android:text="View All"
+                android:textColor="#007AFF"
+                android:textSize="14sp"
+                android:paddingHorizontal="24dp"
+                android:visibility="gone"
+                style="?android:attr/borderlessButtonStyle" />
+
+        </LinearLayout>
+
+        <!-- Medical Conditions Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp"
+            android:paddingVertical="16dp">
+
+            <!-- Medical Conditions Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Medical Conditions"
+                    android:textColor="@android:color/black"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnEditConditions"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:paddingHorizontal="16dp"
+                    android:text="Add"
+                    android:textColor="#007AFF"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Medical Conditions RecyclerView (Dynamic) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewConditions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <!-- Empty State for Medical Conditions -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyConditions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingVertical="24dp"
+                android:visibility="visible">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/baseline_health_and_safety_24"
+                    android:layout_marginBottom="12dp"
+                    app:tint="#CCCCCC" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No medical conditions added"
+                    android:textColor="#999999"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add your medical conditions and devices"
+                    android:textColor="#CCCCCC"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Blood Type Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp"
+            android:paddingVertical="16dp">
+
+            <!-- Blood Type Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Blood Type"
+                    android:textColor="@android:color/black"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnSetBloodType"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:paddingHorizontal="16dp"
+                    android:text="Set"
+                    android:textColor="#007AFF"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Blood Type Content (Shows when set) -->
+            <LinearLayout
+                android:id="@+id/layoutBloodTypeContent"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/baseline_bloodtype_24"
+                    android:layout_marginEnd="12dp"
+                    app:tint="#E53E3E" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Blood Type"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/textBloodType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="B+"
+                    android:textColor="#666666"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="8dp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:tint="#666666" />
+
+            </LinearLayout>
+
+            <!-- Empty State for Blood Type -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyBloodType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingVertical="24dp"
+                android:visibility="visible">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/baseline_bloodtype_24"
+                    android:layout_marginBottom="12dp"
+                    app:tint="#CCCCCC" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Blood type not set"
+                    android:textColor="#999999"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add your blood type for emergency situations"
+                    android:textColor="#CCCCCC"
+                    android:textSize="14sp"
+                    android:textAlignment="center"
+                    android:paddingHorizontal="32dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,5 +1,6 @@
 package com.example.ens492frontend
 
+import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +28,6 @@ import kotlin.random.Random
 class WebSocketService {
     companion object {
         private const val TAG = "WebSocketService"
-        private const val ECG_WEBSOCKET_URL = "ws://10.0.2.2:8080/ws/ecg?userId=1"
         private const val RECONNECT_DELAY = 5000L // 5 seconds delay for reconnect attempts
         private const val NUM_LEADS = 12 // Standard 12-lead ECG
     }
@@ -54,20 +54,15 @@ class WebSocketService {
     /**
      * Connect to the WebSocket server
      */
-    suspend fun connect() {
-        withContext(Dispatchers.IO) {
-            if (webSocket != null) {
-                Log.w(TAG, "WebSocket already connected or connecting")
-                return@withContext
-            }
+    fun connect(context: Context) {
+        val request = Request.Builder()
+            .url(getWebSocketUrl(context))
+            .build()
 
-            val request = Request.Builder()
-                .url(ECG_WEBSOCKET_URL)
-                .build()
+        Log.d(TAG, "Connecting to: ${getWebSocketUrl(context)}")
 
-            webSocket = client.newWebSocket(request, createWebSocketListener())
-            Log.d(TAG, "WebSocket connect request sent")
-        }
+        // Use the properly implemented WebSocketListener
+        webSocket = client.newWebSocket(request, createWebSocketListener())
     }
 
     /**
@@ -78,6 +73,12 @@ class WebSocketService {
         webSocket = null
         stopSimulation()
         Log.d(TAG, "WebSocket disconnected")
+    }
+
+    fun getWebSocketUrl(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val userId = sharedPreferences.getLong("userId", -1)
+        return "ws://10.0.2.2:8080/ws/ecg?userId=$userId"
     }
 
     /**
@@ -246,7 +247,7 @@ class WebSocketService {
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e(TAG, "WebSocket failure: ${t.message}", t)
-                handleReconnect()
+                //handleReconnect()
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -259,7 +260,7 @@ class WebSocketService {
     /**
      * Handle reconnection attempts
      */
-    private fun handleReconnect() {
+    /*private fun handleReconnect() {
         CoroutineScope(Dispatchers.IO).launch {
             delay(RECONNECT_DELAY)
             if (webSocket == null) {
@@ -267,7 +268,7 @@ class WebSocketService {
                 connect()
             }
         }
-    }
+    }*/
 
     /**
      * Start simulation mode (for testing without a server)

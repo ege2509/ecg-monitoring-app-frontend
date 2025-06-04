@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
@@ -19,6 +20,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var passwordEditText: EditText
     private lateinit var loginButton: Button
     private lateinit var instantMonitoringButton: AppCompatButton
+    private lateinit var signupPromptText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +31,7 @@ class LoginActivity : AppCompatActivity() {
         passwordEditText = findViewById(R.id.passwordText1)
         loginButton = findViewById(R.id.signInButton3)
         instantMonitoringButton = findViewById(R.id.instantMonitoringButton2)
+        signupPromptText = findViewById(R.id.signupPromptText)
 
         // Set click listener for login button
         loginButton.setOnClickListener {
@@ -39,6 +42,12 @@ class LoginActivity : AppCompatActivity() {
         instantMonitoringButton.setOnClickListener {
             // Create an Intent to start the new Activity
             val intent = Intent(this, EcgActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Set click listener for signup prompt text
+        signupPromptText.setOnClickListener {
+            val intent = Intent(this, SignUpActivity::class.java)
             startActivity(intent)
         }
     }
@@ -70,11 +79,18 @@ class LoginActivity : AppCompatActivity() {
                         apply()
                     }
 
+                    // SET ACTIVE ECG USER RIGHT AFTER LOGIN
+                    response.userId?.let { userId ->
+                        setActiveEcgUser(userId)
+                    }
+
                     Toast.makeText(
                         this@LoginActivity,
                         "Login successful: ${response.message}",
                         Toast.LENGTH_SHORT
                     ).show()
+
+                    Log.d("LoginActivity", "UserId to save: ${response.userId}")
 
                     // Navigate to main activity
                     val intent = Intent(this@LoginActivity, HomeActivity::class.java)
@@ -99,11 +115,17 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-
-    // This is the method referenced in your XML for signup button
-    fun signInClicked(view: View) {
-        // This is currently being used for login button
-        performLogin()
+    // Simple function to set active ECG user on backend
+    private suspend fun setActiveEcgUser(userId: Long) {
+        try {
+            UserApi.setActiveEcgUser(userId)
+            Log.d("LoginActivity", "Set active ECG user: $userId")
+        } catch (e: Exception) {
+            Log.e("LoginActivity", "Failed to set active ECG user", e)
+        }
     }
 
+    fun signInClicked(view: View) {
+        performLogin()
+    }
 }

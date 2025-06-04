@@ -221,7 +221,7 @@
             <!-- Connect to ECG Button -->
             <Button
                 android:id="@+id/connectEcgButton"
-                android:layout_width="320dp"
+                android:layout_width="382dp"
                 android:layout_height="51dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_rounded_card"

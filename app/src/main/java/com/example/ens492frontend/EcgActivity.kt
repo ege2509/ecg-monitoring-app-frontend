@@ -57,6 +57,7 @@ class EcgActivity : AppCompatActivity() {
         // Setup UI components
         setupLeadSelector()
         setupConnectButton()
+        setupSaveButton() // Add this line!
     }
 
     private fun setupLeadSelector() {
@@ -91,17 +92,25 @@ class EcgActivity : AppCompatActivity() {
                 connectToEcgService()
                 //startContinuousTest()
                 connectButton.text = "Disconnect"
-               // statusText.text = "Connected"
-              //  statusText.setTextColor(getColor(android.R.color.holo_green_dark))
+                // statusText.text = "Connected"
+                //  statusText.setTextColor(getColor(android.R.color.holo_green_dark))
             } else {
                 Log.d("ECG", "Disconnecting from ECG service...")
                 disconnectFromEcgService()
                 connectButton.text = "Connect"
                 //statusText.text = "Disconnected"
-               // statusText.setTextColor(getColor(android.R.color.holo_red_dark))
+                // statusText.setTextColor(getColor(android.R.color.holo_red_dark))
             }
 
             Log.d("ECG", "Connect button processed, new state: $isConnected")
+        }
+    }
+
+    // ADD THIS NEW METHOD
+    private fun setupSaveButton() {
+        saveButton.setOnClickListener {
+            Log.d("ECG", "Save button clicked")
+            saveRecording()
         }
     }
 
@@ -121,7 +130,8 @@ class EcgActivity : AppCompatActivity() {
         Toast.makeText(this, "Saving recording...", Toast.LENGTH_SHORT).show()
 
         // Get the user ID - replace with your actual user ID retrieval method
-        val userId = 1L  // Replace with actual user ID
+        val sharedPref = getSharedPreferences("user_prefs", MODE_PRIVATE)
+        val userId = sharedPref.getLong("userId", -1L)
 
         // Make the API call
         lifecycleScope.launch(Dispatchers.IO) {
@@ -133,13 +143,16 @@ class EcgActivity : AppCompatActivity() {
                     .build()
 
                 client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
+                    Log.d("ECG", "Save response: ${response.code}, body: $responseBody")
+
                     withContext(Dispatchers.Main) {
                         if (response.isSuccessful) {
-                            Toast.makeText(this@EcgActivity, "Recording saved successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@EcgActivity, "Recording saved successfully", Toast.LENGTH_LONG).show()
                             Log.d("ECG", "Recording saved successfully")
                         } else {
-                            Toast.makeText(this@EcgActivity, "Failed to save recording", Toast.LENGTH_SHORT).show()
-                            Log.e("ECG", "Error saving recording: ${response.code}")
+                            Toast.makeText(this@EcgActivity, "Failed to save recording: ${response.code}", Toast.LENGTH_SHORT).show()
+                            Log.e("ECG", "Error saving recording: ${response.code}, body: $responseBody")
                         }
                     }
                 }
@@ -177,8 +190,6 @@ class EcgActivity : AppCompatActivity() {
         }
     }
 
-
-
     private fun connectToEcgService() {
         // Connect the WebSocket service
         lifecycleScope.launch {
@@ -188,6 +199,13 @@ class EcgActivity : AppCompatActivity() {
                 // Connect the visualization to receive data
                 ecgVisualization.connectToEcgService(lifecycleScope, webSocketService)
 
+                // Add this: Listen for abnormalities data
+                lifecycleScope.launch {
+                    webSocketService.abnormalitiesFlow.collect { abnormalities ->
+                        handleAbnormalities(abnormalities)
+                    }
+                }
+
                 if (isInEditMode) {
                     // Start simulation for development
                     Log.d("ECG", "Running in edit mode - starting simulation")
@@ -195,7 +213,7 @@ class EcgActivity : AppCompatActivity() {
                 } else {
                     // Connect to real WebSocket server for production
                     Log.d("ECG", "Running in production mode - connecting to real server")
-                    webSocketService.connect()
+                    webSocketService.connect(this@EcgActivity)
 
                     webSocketService.stopSimulation()
                     Log.d("ECG", "Connected to real WebSocket server")
@@ -213,6 +231,36 @@ class EcgActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleAbnormalities(abnormalities: Map<String, Float>) {
+        // Filter out abnormalities with values > 0 (indicating presence)
+        val detectedAbnormalities = abnormalities.filter { it.value > 0.0f }
+
+        if (detectedAbnormalities.isNotEmpty()) {
+            // Create a readable message
+            val abnormalityNames = mapOf(
+                "SB" to "Sinus Bradycardia",
+                "RBBB" to "Right Bundle Branch Block",
+                "LBBB" to "Left Bundle Branch Block",
+                "1dAVb" to "First Degree AV Block",
+                "AF" to "Atrial Fibrillation",
+                "ST" to "ST Changes"
+            )
+
+            val messages = detectedAbnormalities.map { (code, confidence) ->
+                val name = abnormalityNames[code] ?: code
+                "$name (${(confidence * 100).toInt()}%)"
+            }
+
+            val toastMessage = "⚠️ Abnormalities detected:\n" + messages.joinToString("\n")
+
+            // Show toast on main thread
+            runOnUiThread {
+                Toast.makeText(this@EcgActivity, toastMessage, Toast.LENGTH_LONG).show()
+                Log.d("ECG", "Abnormalities detected: $detectedAbnormalities")
+            }
+        }
+    }
+
     private fun disconnectFromEcgService() {
         // Make sure to stop simulation if it's running
         webSocketService.stopSimulation()
@@ -225,6 +273,7 @@ class EcgActivity : AppCompatActivity() {
 
         Log.d("ECG", "Fully disconnected from ECG service")
     }
+
     override fun onDestroy() {
         super.onDestroy()
         // Make sure to disconnect on activity destroy

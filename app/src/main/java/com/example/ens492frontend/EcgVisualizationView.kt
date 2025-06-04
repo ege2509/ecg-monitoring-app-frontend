@@ -45,7 +45,7 @@ class EcgVisualizationView @JvmOverloads constructor(
         const val MM_TO_PIXEL_RATIO = 6.0f
         const val PIXELS_PER_GRID = GRID_SIZE_MM * MM_TO_PIXEL_RATIO
         const val MILLIVOLTS_PER_GRID = 0.5f
-        const val DEFAULT_BPM = 70
+        const val DEFAULT_BPM = 80
         const val DEFAULT_LEAD_INDEX = 0 // Starting with lead I (0-based index)
         const val NUM_LEADS = 12
         const val ABNORMALITY_THRESHOLD = 0.7f
@@ -88,12 +88,11 @@ class EcgVisualizationView @JvmOverloads constructor(
     private val allLeadsDataPoints = mutableMapOf<Int, LinkedList<Float>>()
 
     private val heartRateData = mutableListOf<Int>() // To store heart rate values
-    private var currentHeartRate = 0 // To store the most recent heart rate
+
 
     // Recording state
     private var isRecording = true             // Whether actively recording data
     private var currentLeadIndex = DEFAULT_LEAD_INDEX
-    private var heartRate = currentHeartRate
     private var isConnected = false
 
     // Replay system state
@@ -115,6 +114,8 @@ class EcgVisualizationView @JvmOverloads constructor(
     // Gesture detection
     private val gestureDetector: GestureDetectorCompat
     private val scaleGestureDetector: ScaleGestureDetector
+
+    private var heartRate = 0
 
     // Abnormality detection (now per lead)
     private data class Abnormality(val type: String, val probability: Float)
@@ -191,11 +192,10 @@ class EcgVisualizationView @JvmOverloads constructor(
     }
 
     // UI controls
-    private val saveButton = RectF()
     private val clearButton = RectF()
-    private val replayButton = RectF()
 
     init {
+
         attrs?.let {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.EcgVisualizationView)
             currentLeadIndex = typedArray.getInt(R.styleable.EcgVisualizationView_displayLeadIndex, DEFAULT_LEAD_INDEX)
@@ -223,6 +223,8 @@ class EcgVisualizationView @JvmOverloads constructor(
                 return false
             }
 
+
+
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 // Reset zoom and scroll position on double tap
                 zoomLevel = 1.0f
@@ -233,16 +235,6 @@ class EcgVisualizationView @JvmOverloads constructor(
                 return true
             }
 
-            override fun onSingleTapUp(e: MotionEvent): Boolean {
-                if (clearButton.contains(e.x, e.y)) {
-                    clearRecording()
-                    return true
-                } else if (replayButton.contains(e.x, e.y)) {
-                    toggleReplay()
-                    return true
-                }
-                return false
-            }
         })
 
         scaleGestureDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -329,27 +321,33 @@ class EcgVisualizationView @JvmOverloads constructor(
 
                 scrollOffset = 0f
 
-                webSocketService.ecgDataFlow.collectLatest { leadDataMap ->
-                    // Process the data for ALL leads
-                    processAllEcgData(leadDataMap)
+                // Launch ECG data collection in separate coroutine
+                launch {
+                    webSocketService.ecgDataFlow.collectLatest { leadDataMap ->
+                        // Process the data for ALL leads
+                        processAllEcgData(leadDataMap)
 
-                    // Mark that we have recorded data in this session
-                    if (leadDataMap.isNotEmpty()) {
-                        hasRecordedData = true
-                    }
+                        // Mark that we have recorded data in this session
+                        if (leadDataMap.isNotEmpty()) {
+                            hasRecordedData = true
+                        }
 
-                    // Update UI on main thread
-                    withContext(Dispatchers.Main) {
-                        updateMaxScrollOffset()
-                        updateEcgPath()
-                        invalidate()
+                        // Update UI on main thread
+                        withContext(Dispatchers.Main) {
+                            updateMaxScrollOffset()
+                            updateEcgPath()
+                            invalidate()
+                        }
                     }
                 }
 
-
+                // Launch heart rate collection in separate coroutine
                 launch {
+                    Log.d(TAG, "Starting heart rate collection...")
                     webSocketService.heartRateFlow.collectLatest { heartRate ->
+                        Log.d(TAG, "Received heart rate from WebSocket: $heartRate")
                         withContext(Dispatchers.Main) {
+                            Log.d(TAG, "Updating heart rate on main thread: $heartRate")
                             updateHeartRate(heartRate)
                         }
                     }
@@ -398,9 +396,6 @@ class EcgVisualizationView @JvmOverloads constructor(
                         leadData.add(value)
                     }
                 }
-
-                // TODO: Perform abnormality detection for this lead
-                // This would be where you'd do real-time detection and add to abnormalRangesByLead
             }
         }
 
@@ -511,25 +506,12 @@ class EcgVisualizationView @JvmOverloads constructor(
         val buttonHeight = 60f
         val buttonPadding = 10f
 
-        // Position buttons at the bottom of the view
-        saveButton.set(
-            w - buttonWidth * 3 - buttonPadding * 3,
-            h - buttonHeight - buttonPadding,
-            w - buttonWidth * 2 - buttonPadding * 3,
-            h - buttonPadding
-        )
+
 
         clearButton.set(
             w - buttonWidth * 2 - buttonPadding * 2,
             h - buttonHeight - buttonPadding,
             w - buttonWidth - buttonPadding * 2,
-            h - buttonPadding
-        )
-
-        replayButton.set(
-            w - buttonWidth - buttonPadding,
-            h - buttonHeight - buttonPadding,
-            w - buttonPadding,
             h - buttonPadding
         )
 
@@ -758,14 +740,6 @@ class EcgVisualizationView @JvmOverloads constructor(
             buttonTextPaint
         )
 
-        // Replay button
-        canvas.drawRoundRect(replayButton, 10f, 10f, buttonPaint)
-        canvas.drawText(
-            if (isReplaying) "STOP" else "REPLAY",
-            replayButton.centerX(),
-            replayButton.centerY() + buttonTextPaint.textSize / 3,
-            buttonTextPaint
-        )
     }
 
     /**
@@ -899,7 +873,6 @@ class EcgVisualizationView @JvmOverloads constructor(
         updateEcgPath()
 
         heartRateData.clear()
-        currentHeartRate = 0
 
         // Generate a new recording session ID
         recordingSessionId = "recording_" + System.currentTimeMillis()
