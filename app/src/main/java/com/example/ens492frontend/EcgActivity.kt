@@ -1,12 +1,14 @@
 package com.example.ens492frontend
 
 import android.content.ContentValues.TAG
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
@@ -55,9 +57,19 @@ class EcgActivity : AppCompatActivity() {
         webSocketService = WebSocketService()
 
         // Setup UI components
+        setupBackButton()
         setupLeadSelector()
         setupConnectButton()
         setupSaveButton() // Add this line!
+    }
+
+    private fun setupBackButton() {
+        val backButton = findViewById<ImageView>(R.id.backButton)
+        backButton.setOnClickListener {
+            val intent = Intent(this, HomeActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
     }
 
     private fun setupLeadSelector() {
@@ -67,7 +79,7 @@ class EcgActivity : AppCompatActivity() {
         leadSelector.adapter = leadAdapter
 
         // Set default selection (Lead II = index 1)
-        leadSelector.setSelection(1) // Lead II is typically the default for rhythm analysis
+        leadSelector.setSelection(1) // Lead II is the default
 
         // Set lead change listener
         leadSelector.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -106,7 +118,6 @@ class EcgActivity : AppCompatActivity() {
         }
     }
 
-    // ADD THIS NEW METHOD
     private fun setupSaveButton() {
         saveButton.setOnClickListener {
             Log.d("ECG", "Save button clicked")

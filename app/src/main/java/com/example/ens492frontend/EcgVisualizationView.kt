@@ -237,6 +237,8 @@ class EcgVisualizationView @JvmOverloads constructor(
 
         })
 
+
+
         scaleGestureDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
                 // Only allow zooming when not recording or when we have enough data
@@ -284,7 +286,15 @@ class EcgVisualizationView @JvmOverloads constructor(
             return true
         }
 
-        // If we're still recording with minimal data, don't handle touch events
+        // Handle button clicks on ACTION_DOWN
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            // Check if clear button was clicked
+            if (clearButton.contains(event.x, event.y)) {
+                clearRecording()
+                return true
+            }
+        }
+
         if (isRecording && !hasRecordedData) {
             return false
         }

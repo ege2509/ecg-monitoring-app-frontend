@@ -8,6 +8,7 @@
     android:backgroundTint="@color/main_blue"
     tools:context=".SignUpActivity">
 
+
     <View
         android:id="@+id/card"
         android:layout_width="332dp"
@@ -33,7 +34,6 @@
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView3" />
-
 
 
     <TextView
@@ -149,6 +149,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/passwordText2" />
 
+
     <TextView
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
@@ -161,8 +162,7 @@
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
+        app:layout_constraintTop_toTopOf="@+id/card" />
 
     <TextView
         android:id="@+id/textView2"

@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -37,11 +38,13 @@ class SignUpActivity : AppCompatActivity() {
         reenterPasswordEditText = findViewById(R.id.passwordText2)
         signUpButton = findViewById(R.id.signUpButton2)
 
+
         // Set click listener for sign up button
         signUpButton.setOnClickListener {
             performSignUp()
         }
     }
+
 
     private fun performSignUp() {
         val firstname = firstnameEditText.text.toString().trim()

@@ -9,6 +9,7 @@ import com.example.ens492frontend.models.EcgRecordingResponse
 import com.example.ens492frontend.models.LoginRequest
 import com.example.ens492frontend.models.RegisterRequest
 import com.example.ens492frontend.models.User
+import com.example.ens492frontend.models.Warning
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.client.statement.HttpResponse
@@ -67,10 +68,30 @@ object UserApi {
         }
     }
 
-    suspend fun getUserRecordings(userId: Long): List<EcgRecordingResponse> =
+    suspend fun getUserRecordingsByMedicalInfoId(medicalInfoId: Long): List<EcgRecordingResponse> =
         ApiClient.client.get("${ApiClient.baseUrl}/api/ecg/recordings") {
-            parameter("userId", userId)
+            parameter("medicalInfoId", medicalInfoId)
         }.body()
+
+    suspend fun getUserRecordings(userId: Long): List<EcgRecordingResponse> {
+        // First get the medical info to get the medicalInfoId
+        val medicalInfo = MedicalInfoService().getMedicalInfo(userId)
+        val medicalInfoId = medicalInfo?.id ?: throw Exception("Medical info not found for user")
+        println("Medical info response: $medicalInfo")
+        println("Medical info id: ${medicalInfo?.id}")
+        // Then get recordings using medicalInfoId
+        return ApiClient.client.get("${ApiClient.baseUrl}/api/ecg/recordings") {
+            parameter("medicalInfoId", medicalInfoId)  // Changed parameter name
+        }.body()
+    }
     suspend fun getRecording(recordingId: Long): EcgRecording =
         ApiClient.client.get("${ApiClient.baseUrl}/api/ecg/recording/$recordingId").body()
+
+    suspend fun getWarningsByUserId(userId: Long): List<Warning> =
+        ApiClient.client.get("${ApiClient.baseUrl}/api/warnings/user/$userId").body()
+
+
+    suspend fun deleteRecording(recordingId: Long): Map<String, Any> =
+        ApiClient.client.delete("${ApiClient.baseUrl}/api/ecg/recording/$recordingId").body()
 }
+

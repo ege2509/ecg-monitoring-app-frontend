@@ -43,10 +43,6 @@ class ProfileActivity : AppCompatActivity() {
             onBackPressed()
         }
 
-        binding.settingsButton.setOnClickListener {
-            // Navigate to settings
-            // startActivity(Intent(this, SettingsActivity::class.java))
-        }
 
         binding.saveButton.setOnClickListener {
             saveUserProfile()
@@ -74,7 +70,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.apply {
             profileName.text = user.name
 
-            // Populate form fields
+
             NameInput.setText(user.name)
             ageInput.setText(user.age?.toString() ?: "")
             genderInput.setText(user.gender ?: "")

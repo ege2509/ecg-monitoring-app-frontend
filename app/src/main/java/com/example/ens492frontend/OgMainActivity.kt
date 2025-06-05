@@ -19,17 +19,13 @@ class OgMainActivity : AppCompatActivity() {
         instantMonitoringButton = findViewById(R.id.instantMonitoringButton)
 
 
-        // Set the OnClickListener to start a new activity
         getStartedButton.setOnClickListener {
-            // Create an Intent to start the new Activity
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
         }
 
 
-        // Set the OnClickListener to start a new activity
         instantMonitoringButton.setOnClickListener {
-            // Create an Intent to start the new Activity
             val intent = Intent(this, EcgActivity::class.java)
             startActivity(intent)
         }

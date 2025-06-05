@@ -1,4 +1,5 @@
 package com.example.ens492frontend.models
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -51,4 +52,12 @@ data class EcgRecording(
     val numLeads: Int,
     val recordingDate: String,
     val processedData: String
+)
+@Serializable
+data class Warning(
+    val id: Long,
+    val type: String,
+    val details: String,
+    @SerialName("ecg_recording_id")
+    val ecgRecordingId: Long
 )

@@ -1,9 +1,11 @@
 package com.example.ens492frontend
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -28,7 +30,6 @@ class MedicalInfoActivity : AppCompatActivity() {
     private lateinit var btnEditConditions: Button
     private lateinit var btnViewAllFiles: Button
 
-    // Service
     private val medicalInfoService = MedicalInfoService()
     private var userId: Long = 0L
 
@@ -39,6 +40,8 @@ class MedicalInfoActivity : AppCompatActivity() {
         // Get userId from SharedPreferences
         val sharedPref = getSharedPreferences("user_prefs", MODE_PRIVATE)
         userId = sharedPref.getLong("userId", 0L)
+
+        setupBackButton()
 
         if (userId == 0L) {
             Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show()
@@ -88,6 +91,16 @@ class MedicalInfoActivity : AppCompatActivity() {
             showConditionsDialog()
         }
     }
+
+    private fun setupBackButton() {
+        val backButton = findViewById<ImageView>(R.id.back_icon)
+        backButton.setOnClickListener {
+            val intent = Intent(this, HomeActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+    }
+
 
     private fun showBloodTypeDialog() {
         val bloodTypes = arrayOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
@@ -199,8 +212,6 @@ class MedicalInfoActivity : AppCompatActivity() {
     }
 
     private fun updateUI(data: UserMedicalInfo) {
-        // Update Files (assuming files is a list property in UserMedicalInfo)
-        // Note: Based on your backend, files might not be implemented yet
         val hasFiles = false // Replace with actual files check when implemented
         if (!hasFiles) {
             recyclerViewFiles.visibility = View.GONE
@@ -212,7 +223,6 @@ class MedicalInfoActivity : AppCompatActivity() {
             btnViewAllFiles.visibility = View.VISIBLE
         }
 
-        // Update Medical Conditions (combine allergies and medications)
         val conditions = mutableListOf<String>()
 
         // Add allergies if not empty

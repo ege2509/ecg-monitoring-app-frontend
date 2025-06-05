@@ -148,8 +148,16 @@ class WebSocketService {
                     // Get abnormalities data
                     val abnormalitiesMap = mutableMapOf<String, Float>()
                     if (jsonObject.has("abnormalities")) {
-                        // [existing abnormalities processing code]
-                    }
+                            val abnormalities = jsonObject.getJSONObject("abnormalities")
+                            val keys = abnormalities.keys()
+                            while (keys.hasNext()) {
+                                val key = keys.next()
+                                val value = abnormalities.optDouble(key, 0.0).toFloat()
+                                abnormalitiesMap[key] = value
+                            }
+                            Log.d(TAG, "Found abnormalities: $abnormalitiesMap")
+
+                        }
 
                     // Emit all collected data using coroutines
                     CoroutineScope(Dispatchers.IO).launch {

@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.ens492frontend.models.EcgRecording
@@ -21,6 +22,7 @@ class RecordingViewActivity : AppCompatActivity() {
     private lateinit var leadSelector: Spinner
     private lateinit var ecgVisualization: RecordingVisualizationView
     private lateinit var backButton: Button
+    private lateinit var deleteButton: Button
 
     private var recordingId: Long = -1
     private lateinit var recording: EcgRecording
@@ -43,9 +45,15 @@ class RecordingViewActivity : AppCompatActivity() {
         leadSelector = findViewById(R.id.leadSelector)
         ecgVisualization = findViewById(R.id.ecgVisualization)
         backButton = findViewById(R.id.backButton)
+        deleteButton = findViewById(R.id.deleteButton)
 
         backButton.setOnClickListener {
             finish()
+        }
+
+        // Setup delete button click listener
+        deleteButton.setOnClickListener {
+            showDeleteConfirmationDialog()
         }
 
         // Load recording data
@@ -62,7 +70,6 @@ class RecordingViewActivity : AppCompatActivity() {
                 val recordingData = UserApi.getRecording(recordingId)
 
                 // Update UI with recording data
-
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 val dateOnly = recordingData.recordingDate.format(formatter)
                 titleText.text = "ECG Recording - $dateOnly"
@@ -77,11 +84,52 @@ class RecordingViewActivity : AppCompatActivity() {
                 recording = recordingData
 
             } catch (e: Exception) {
-
+                Toast.makeText(this@RecordingViewActivity, "Error loading recording: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Recording")
+            .setMessage("Are you sure you want to delete this ECG recording? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                deleteRecording()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun deleteRecording() {
+        lifecycleScope.launch {
+            try {
+                // Show loading state
+                deleteButton.isEnabled = false
+                deleteButton.text = "Deleting..."
+
+                // Call API to delete recording
+                UserApi.deleteRecording(recordingId)
+
+                // Show success message
+                Toast.makeText(this@RecordingViewActivity, "Recording deleted successfully", Toast.LENGTH_SHORT).show()
+
+                // Set result to indicate deletion and finish activity
+                setResult(RESULT_OK)
+                finish()
+
+            } catch (e: Exception) {
+                // Re-enable button and show error
+                deleteButton.isEnabled = true
+                deleteButton.text = "Delete"
+
+                Toast.makeText(
+                    this@RecordingViewActivity,
+                    "Failed to delete recording: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
 
     private fun setupLeadSelector() {
         // Create adapter for the leads spinner
@@ -103,9 +151,10 @@ class RecordingViewActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun parseProcessedData(processedData: String): Map<Int, List<Float>> {
         // Parse the processed data string into a map of lead index to data points
-        // Format described as: "lead1:0.0,0.0,0.0,0...lead2:0.0,0.0..."
+        // Format: "lead1:0.0,0.0,0.0,0...lead2:0.0,0.0..."
         val result = mutableMapOf<Int, List<Float>>()
 
         // Split by lead
@@ -119,7 +168,6 @@ class RecordingViewActivity : AppCompatActivity() {
 
             try {
                 val leadIndex = leadParts[0].toInt()
-
 
                 val dataPoints = leadParts[1].split(",").mapNotNull {
                     it.trim().toFloatOrNull()

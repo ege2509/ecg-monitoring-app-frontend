@@ -40,7 +40,7 @@
         app:layout_constraintTop_toTopOf="@id/leadSelector" />
 
     <Button
-        android:id="@+id/backButton2"
+        android:id="@+id/deleteButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="116dp"

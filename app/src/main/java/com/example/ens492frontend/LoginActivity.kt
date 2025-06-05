@@ -33,14 +33,12 @@ class LoginActivity : AppCompatActivity() {
         instantMonitoringButton = findViewById(R.id.instantMonitoringButton2)
         signupPromptText = findViewById(R.id.signupPromptText)
 
-        // Set click listener for login button
         loginButton.setOnClickListener {
             performLogin()
         }
 
-        // Set the OnClickListener to start a new activity
+
         instantMonitoringButton.setOnClickListener {
-            // Create an Intent to start the new Activity
             val intent = Intent(this, EcgActivity::class.java)
             startActivity(intent)
         }
