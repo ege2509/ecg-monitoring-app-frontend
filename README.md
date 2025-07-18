@@ -1,5 +1,7 @@
 # ECG Monitoring Android App
 
+Files are located in the Master branch
+
 Android application developed in Kotlin for real-time ECG monitoring, data storage, and user medical profiling.
 
 ## 📱 Key Features
